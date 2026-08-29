@@ -17,11 +17,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 from dotenv import load_dotenv
 
 from agent1 import run_agent1
+
+RESULTS_FILE = "results.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,7 +76,13 @@ def main() -> None:
         print(f"Configuration error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    print(json.dumps(result.model_dump(), indent=2, ensure_ascii=False))
+    payload = json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
+    print(payload)
+
+    results_path = os.path.join(os.path.dirname(__file__), RESULTS_FILE)
+    with open(results_path, "w", encoding="utf-8") as handle:
+        handle.write(payload + "\n")
+    print(f"Results saved to {RESULTS_FILE}")
 
 
 if __name__ == "__main__":

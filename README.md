@@ -151,6 +151,42 @@ patentGate/
 └── README.md
 ```
 
+## Running the local HTTP API server
+
+A FastAPI server (`server.py`) exposes the same Agent 1 pipeline over HTTP.
+
+Start it with:
+
+```bash
+uvicorn server:app --reload
+```
+
+The server listens on `http://127.0.0.1:8000` by default.
+
+### Endpoints
+
+**`GET /health`** — liveness probe.
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Returns:
+
+```json
+{"status": "ok"}
+```
+
+**`POST /analyze`** — run Agent 1 on a product description. On success it
+returns the same structured JSON as `main.py` and writes the result to
+`results.json`.
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"product_description": "A smart water bottle that measures liquid temperature using a sensor and sends the temperature to a smartphone using Bluetooth."}'
+```
+
 ## Running the tests
 
 Tests never hit the network and never use real API keys — OpenAI calls are
