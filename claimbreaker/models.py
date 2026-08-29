@@ -49,3 +49,27 @@ class FeatureExtractionResult(BaseModel):
                 if left not in ids or right not in ids:
                     raise ValueError(f"relationship {relationship!r} references an unknown feature")
         return self
+
+
+class PatentResult(BaseModel):
+    """A normalized candidate discovered on the public Google Patents site."""
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    patent_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+    source: str = "Google Patents"
+    publication_date: str | None = None
+    snippet: str | None = None
+    relevance_score: float = 0.0
+    matched_features: list[str] = Field(default_factory=list)
+    matched_terms: list[str] = Field(default_factory=list)
+
+
+class PatentSearchResult(BaseModel):
+    """Search queries and up to five genuine, ranked patent candidates."""
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    queries: list[str] = Field(default_factory=list)
+    results: list[PatentResult] = Field(default_factory=list, max_length=5)
+    warnings: list[str] = Field(default_factory=list)

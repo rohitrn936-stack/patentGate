@@ -46,3 +46,17 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 .venv/bin/python -m unittest discover -s tests -v
 ```
+
+## Patent Search Layer
+
+The MVP queries the public Google Patents search site directly; it does not use
+PatentsView, Tavily, or another search API/key. Send a validated Agent 1 result
+to `POST /patents/search`, or run the sample end-to-end command:
+
+```bash
+.venv/bin/python -m claimbreaker.patent_cli
+```
+
+The search layer creates 3–5 focused technical queries, normalizes genuine
+Google Patents candidates, deduplicates them, and returns at most five local
+lexically ranked results. It does not make legal conclusions.

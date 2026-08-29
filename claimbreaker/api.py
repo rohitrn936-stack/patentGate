@@ -1,9 +1,10 @@
-"""Minimal Agent 1 HTTP endpoint for local integration testing."""
+"""ClaimBreaker Agent 1 and public Google Patents discovery endpoints."""
 from __future__ import annotations
 from typing import Annotated
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from .feature_extractor import extract_features_from_image_bytes
-from .models import FeatureExtractionResult
+from .models import FeatureExtractionResult, PatentSearchResult
+from .patent_search import GooglePatentsSearch
 
 app = FastAPI(title="ClaimBreaker Agent 1", version="0.1.0")
 
@@ -16,3 +17,9 @@ async def extract_product_features(product_description: Annotated[str, Form(...)
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.post("/patents/search", response_model=PatentSearchResult)
+async def search_patents(extraction: FeatureExtractionResult) -> PatentSearchResult:
+    """Discover and locally rank genuine Google Patents candidates only."""
+    return GooglePatentsSearch().search(extraction)
