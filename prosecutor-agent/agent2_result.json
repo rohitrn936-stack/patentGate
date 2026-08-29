@@ -1,0 +1,123 @@
+{
+    "risk_claims": [
+        {
+            "patent_id": "US123456",
+            "claim_id": "Claim 1",
+            "risk_level": "medium",
+            "reason": "Claim recites analyzing transaction behavior and determining potentially fraudulent status, which appears to correspond to the product's behavior analysis and fraud detection features; overlap is possible."
+        },
+        {
+            "patent_id": "US345678",
+            "claim_id": "Claim 1",
+            "risk_level": "high",
+            "reason": "Claim describes receiving historical transaction information and calculating a risk score based on it; product generates a fraud risk score using historical data; strong alignment."
+        },
+        {
+            "patent_id": "US567890",
+            "claim_id": "Claim 1",
+            "risk_level": "high",
+            "reason": "Claim covers monitoring transaction activity and identifying unusual patterns; product detects suspicious transactions; strong overlap potential."
+        }
+    ],
+    "claim_element_mappings": [
+        {
+            "patent_id": "US123456",
+            "claim_id": "Claim 1",
+            "claim_element": "analyzing transaction behavior of a user",
+            "product_feature": "Analyzes user transaction behavior",
+            "strength": "strong",
+            "explanation": "Directly mirrors the product's capability to analyze user transaction behavior."
+        },
+        {
+            "patent_id": "US123456",
+            "claim_id": "Claim 1",
+            "claim_element": "determining whether the transaction is potentially fraudulent",
+            "product_feature": "Detects suspicious financial transactions",
+            "strength": "strong",
+            "explanation": "The claim's purpose is to determine fraud; aligns with the product's fraud detection capability."
+        },
+        {
+            "patent_id": "US234567",
+            "claim_id": "Claim 1",
+            "claim_element": "encrypting transaction data before transmitting the transaction data to a remote server",
+            "product_feature": "none",
+            "strength": "none",
+            "explanation": "No supplied product feature corresponds to encryption before transmission."
+        },
+        {
+            "patent_id": "US345678",
+            "claim_id": "Claim 1",
+            "claim_element": "receiving historical transaction information",
+            "product_feature": "Uses historical transaction data",
+            "strength": "strong",
+            "explanation": "Historical data is a core product feature and is required by the claim."
+        },
+        {
+            "patent_id": "US345678",
+            "claim_id": "Claim 1",
+            "claim_element": "calculating a risk score based on the historical information",
+            "product_feature": "Generates a fraud risk score",
+            "strength": "strong",
+            "explanation": "The claim's risk score calculation aligns with generating a fraud risk score from history."
+        },
+        {
+            "patent_id": "US456789",
+            "claim_id": "Claim 1",
+            "claim_element": "receiving biometric information from a user",
+            "product_feature": "none",
+            "strength": "none",
+            "explanation": "No biometrics feature exists in the provided product information."
+        },
+        {
+            "patent_id": "US456789",
+            "claim_id": "Claim 1",
+            "claim_element": "authenticating the user based on the biometric information",
+            "product_feature": "none",
+            "strength": "none",
+            "explanation": "No biometrics feature exists in the provided product information."
+        },
+        {
+            "patent_id": "US567890",
+            "claim_id": "Claim 1",
+            "claim_element": "monitoring transaction activity",
+            "product_feature": "Analyzes user transaction behavior",
+            "strength": "strong",
+            "explanation": "Monitoring aligns with monitoring or analyzing transaction activity."
+        },
+        {
+            "patent_id": "US567890",
+            "claim_id": "Claim 1",
+            "claim_element": "identifying unusual transaction patterns",
+            "product_feature": "Detects suspicious financial transactions",
+            "strength": "strong",
+            "explanation": "Identifying unusual patterns maps to detecting suspicious transactions."
+        }
+    ],
+    "confidence_per_patent": [
+        {
+            "patent_id": "US123456",
+            "confidence": 0.85,
+            "explanation": "Direct alignment of claim elements with product features; clear overlap potential in behavioral analysis and fraud determination."
+        },
+        {
+            "patent_id": "US234567",
+            "confidence": 0.1,
+            "explanation": "No supplied product features cover encryption-before-transmission; minimal mapping."
+        },
+        {
+            "patent_id": "US345678",
+            "confidence": 0.92,
+            "explanation": "Claim explicitly uses historical data to compute a risk score; product already includes these capabilities."
+        },
+        {
+            "patent_id": "US456789",
+            "confidence": 0.1,
+            "explanation": "Product features do not include biometric authentication; mapping yields none."
+        },
+        {
+            "patent_id": "US567890",
+            "confidence": 0.8,
+            "explanation": "Claim covers monitoring and identifying unusual patterns; product's fraud-detection features align."
+        }
+    ]
+}
