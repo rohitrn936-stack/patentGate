@@ -1,62 +1,171 @@
-# ClaimBreaker — Agent 1: Feature Extractor
+# PatentGate — Agent 1
 
-Agent 1 converts a product description and optional JPEG, PNG, or WebP image
-into validated technical features for the Patent Search Layer. It calls
-`gpt-5-nano` through the OpenAI Responses API. It does not search patents or
-make legal conclusions.
+PatentGate analyzes a user's product and helps identify potentially relevant
+prior-art concepts. This repository currently contains **only Agent 1**:
 
-## Use
+> User input (text + optional image) → technical feature extraction (OpenAI)
+> → knowledge-based similar-concept analysis (OpenAI) → validated structured
+> JSON.
 
-```python
-from claimbreaker import extract_features
+Agents 2 (Prosecutor), 3 (Defender), 4 (Design Engineer), the risk matrix and
+the final report are **not** part of this repo yet.
 
-result = extract_features("A smart helmet detects impacts and sends an alert.")
-```
+## What Agent 1 does
 
-The result is a `FeatureExtractionResult` Pydantic model containing
-`product_summary`, `domain`, atomic `features`, `search_terms`,
-`technical_keywords`, and `uncertainties`.
+**Job 1 — Technical feature extraction (OpenAI).** Given a product description
+and an optional product image it extracts product name/summary, components,
+technical features (each with id, name, description, component, function,
+evidence, `evidence_source`, confidence), mechanisms, sensors, electronics,
+materials, communication interfaces, software features and assumptions. Every
+feature is labelled as one of:
 
-## Optional image analysis
+- `user_stated` — explicitly stated by the user;
+- `image_observation` — a characteristic actually visible in the image;
+- `assumption` — a reasonable engineering guess (also listed under `assumptions`).
 
-Create a local `.env` file and pass an image path to use OpenAI vision:
+Agent 1 **never** invents specifications and **never** makes legal conclusions
+(e.g. that a product infringes or does not infringe a patent).
 
-```bash
-OPENAI_API_KEY="your_key"
-# Optional; gpt-5-nano is the default
-OPENAI_MODEL="gpt-5-nano"
-```
+**Job 2 — Knowledge-based similar-concept analysis (OpenAI).** The extracted
+features are analyzed against concepts, technologies, and mechanisms the model
+already knows from its training. The result is a structured
+`KnowledgeAnalysis`:
 
-```bash
-.venv/bin/python -m claimbreaker.cli "A smart helmet detects impacts." --image ./helmet.png
-```
+- `invention` — a short summary of the invention;
+- `technical_features` — the salient technical features;
+- `similar_known_concepts` — each with name, why it is similar, matching
+  features, differences, and a similarity score;
+- `similarity_score` — 0.0 (no similarity) to 1.0 (near-identical);
+- `similarity_explanation` — an overall explanation;
+- `potentially_overlapping_areas` — domains likely to overlap;
+- `confidence` — how sure the model is of the analysis;
+- `disclaimer` — explicitly states the analysis is based on learned knowledge
+  and is **NOT** a verified patent search.
 
-Start the minimal FastAPI test endpoint with `uvicorn claimbreaker.api:app --reload`.
-Send multipart form data to `POST /agent-1/extract`, using the
-`product_description` and optional `image` fields.
+> Agent 1 performs NO web search, NO Google Search grounding, and NO external
+> patent retrieval. It never claims a real patent was found and never
+> fabricates patent numbers, publication numbers, URLs, or dates.
 
-```bash
-.venv/bin/uvicorn claimbreaker.api:app --reload
-```
-
-## Local checks
+## Installation
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -e .
-.venv/bin/python -m unittest discover -s tests -v
+source .venv/bin/activate          # macOS/Linux
+pip install -r requirements.txt
 ```
 
-## Patent Search Layer
+A `.venv` already exists in this project and the dependencies are installed.
 
-The MVP queries the public Google Patents search site directly; it does not use
-PatentsView, Tavily, or another search API/key. Send a validated Agent 1 result
-to `POST /patents/search`, or run the sample end-to-end command:
+## Required environment variables
+
+Copy the template and fill in the real values:
 
 ```bash
-.venv/bin/python -m claimbreaker.patent_cli
+cp .env.example .env
 ```
 
-The search layer creates 3–5 focused technical queries, normalizes genuine
-Google Patents candidates, deduplicates them, and returns at most five local
-lexically ranked results. It does not make legal conclusions.
+| Variable         | Required | Description                                        |
+| ---------------- | -------- | -------------------------------------------------- |
+| `OPENAI_API_KEY` | yes      | OpenAI key for feature extraction + analysis       |
+| `OPENAI_MODEL`   | optional | OpenAI model ID (default `gpt-4o-mini`)            |
+
+`.env` is git-ignored — never commit it. `OPENAI_MODEL` must be an actual model
+ID exposed by the OpenAI API (not the ChatGPT display name).
+
+## How to run the CLI
+
+```bash
+python main.py "Create a water bottle that measures the temperature of the \
+liquid using a sensor in the cap and sends the temperature to a smartphone \
+using Bluetooth."
+
+# with an optional image (PNG or JPG)
+python main.py "Smart measuring bottle" --image photos/bottle.png
+
+# no argument: prompted interactively
+python main.py
+```
+
+The structured JSON is printed to stdout.
+
+## Example output structure
+
+```json
+{
+  "status": "ok",
+  "errors": [],
+  "product": { "name": "...", "summary": "..." },
+  "components": [ { "id": "C1", "name": "...", "description": "...", "function": "..." } ],
+  "features": [
+    {
+      "id": "F1",
+      "name": "Temperature sensor in the cap",
+      "description": "...",
+      "component": "cap",
+      "function": "...",
+      "evidence": "User stated ...",
+      "evidence_source": "user_stated",
+      "confidence": 1.0
+    }
+  ],
+  "technical_concepts": [],
+  "mechanisms": [],
+  "materials": [],
+  "interfaces": [ { "name": "Bluetooth", "interface_type": "wireless", "protocol": "Bluetooth", "description": "..." } ],
+  "software_features": [],
+  "assumptions": [],
+  "analysis": {
+    "invention": "...",
+    "technical_features": ["Temperature sensor in the cap"],
+    "similar_known_concepts": [
+      {
+        "name": "Smart beverage container with temperature sensing",
+        "why_similar": "...",
+        "matching_features": ["Temperature sensor in the cap"],
+        "differences": "...",
+        "similarity_score": 0.85
+      }
+    ],
+    "similarity_score": 0.75,
+    "similarity_explanation": "...",
+    "potentially_overlapping_areas": ["smart drinkware"],
+    "confidence": 0.7,
+    "disclaimer": "This analysis is based on the model's learned knowledge and is NOT a verified patent search."
+  }
+}
+```
+
+## Architecture
+
+```
+patentGate/
+├── agent1/
+│   ├── __init__.py      # run_agent1() orchestrator + final validation
+│   ├── extractor.py     # OpenAI: feature extraction + knowledge analysis
+│   └── schemas.py       # Pydantic models (the JSON contract)
+├── tests/
+│   └── test_agent1.py
+├── main.py              # CLI demo
+├── requirements.txt
+├── .env / .env.example
+└── README.md
+```
+
+## Running the tests
+
+Tests never hit the network and never use real API keys — OpenAI calls are
+mocked.
+
+```bash
+python -m pytest -q
+```
+
+## Current limitations
+
+- The similar-concept analysis is a knowledge-based aid, **not** legal advice
+  and **not** a verified patent search. It is based purely on the model's
+  learned knowledge.
+- `OPENAI_MODEL` defaults to `gpt-4o-mini` only when the variable is unset;
+  swap it if your account does not have access to that model.
+- Only PNG, JPG and JPEG images are supported.
+- A product image alone (no text description) is not accepted.
