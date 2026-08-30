@@ -1,0 +1,126 @@
+{
+  "status": "ok",
+  "errors": [],
+  "product": {
+    "name": "Smart Temperature-Sensing Water Bottle",
+    "summary": "A compact water bottle that includes a liquid-temperature sensor and a Bluetooth radio to wirelessly transmit measured temperature readings to a paired smartphone for display and monitoring."
+  },
+  "components": [
+    {
+      "id": "C1",
+      "name": "Liquid temperature sensor",
+      "description": "Sensor immersed in the bottle's liquid to measure its temperature.",
+      "function": "Acquire real-time temperature data from the liquid."
+    },
+    {
+      "id": "C2",
+      "name": "Bluetooth transceiver",
+      "description": "Bluetooth module used to wirelessly transmit data to a smartphone.",
+      "function": "Send temperature readings to a paired mobile device."
+    }
+  ],
+  "features": [
+    {
+      "id": "F1",
+      "name": "Liquid temperature sensing",
+      "description": "Measures the liquid temperature using a sensor.",
+      "component": "C1",
+      "function": "Provide temperature data from the liquid.",
+      "evidence": "measures liquid temperature using a sensor",
+      "evidence_source": "user_stated",
+      "confidence": 1.0
+    },
+    {
+      "id": "F2",
+      "name": "Bluetooth temperature reporting",
+      "description": "Transmits the measured temperature to a smartphone via Bluetooth.",
+      "component": "C2",
+      "function": "Wireless delivery of temperature data to a mobile app.",
+      "evidence": "sends the temperature to a smartphone using Bluetooth.",
+      "evidence_source": "user_stated",
+      "confidence": 1.0
+    }
+  ],
+  "technical_concepts": [
+    {
+      "name": "Temperature sensing",
+      "description": "Measurement of liquid temperature via a sensor."
+    },
+    {
+      "name": "Wireless communication",
+      "description": "Bluetooth transmission of sensor data to a mobile device."
+    }
+  ],
+  "mechanisms": [
+    {
+      "name": "Liquid temperature sensing mechanism",
+      "description": "Thermal sensor in contact with liquid to convert thermal energy to an electrical signal representing temperature.",
+      "purpose": "Obtain real-time temperature data of the liquid."
+    },
+    {
+      "name": "Bluetooth data transmission mechanism",
+      "description": "Bluetooth radio interface used to send temperature readings to a paired smartphone.",
+      "purpose": "Provide wireless data delivery to a mobile app."
+    }
+  ],
+  "materials": [],
+  "interfaces": [
+    {
+      "name": "Bluetooth communication",
+      "interface_type": "wireless",
+      "protocol": "Bluetooth",
+      "description": "Wireless link to pair with a smartphone for data transfer."
+    }
+  ],
+  "software_features": [],
+  "assumptions": [],
+  "analysis": {
+    "invention": "Smart water bottle with liquid temperature sensing and Bluetooth transmission to a paired smartphone.",
+    "technical_features": [
+      "Liquid temperature sensing in contact with the bottle's liquid using a temperature sensor",
+      "Bluetooth Low Energy transmission of the measured temperature to a paired smartphone"
+    ],
+    "similar_known_concepts": [
+      {
+        "name": "Smart bottle with integrated BLE temperature sensor",
+        "why_similar": "Directly describes a bottle-based device that senses liquid temperature and reports data via Bluetooth to a smartphone, matching the core concept of the invention.",
+        "matching_features": [
+          "Liquid temperature sensing",
+          "Bluetooth transmission to smartphone"
+        ],
+        "differences": "May differ in sensor placement, power management, or app features; the exact implementation in a bottle form factor and integration details may vary.",
+        "similarity_score": 0.65
+      },
+      {
+        "name": "BLE temperature sensing devices in consumer electronics",
+        "why_similar": "Uses a temperature sensor and Bluetooth Low Energy to convey temperature data to a mobile app, which is the same sensing and communication principle as the invention.",
+        "matching_features": [
+          "Temperature sensing",
+          "Bluetooth data transmission to smartphone"
+        ],
+        "differences": "Not restricted to a bottle or liquid measurement; typically standalone sensors or devices with various form factors.",
+        "similarity_score": 0.55
+      },
+      {
+        "name": "Smart drinkware with environmental and/or temperature sensing",
+        "why_similar": "Part of the broader category of smart drinkware that includes sensors and wireless reporting to apps, closely aligning with the bottle concept.",
+        "matching_features": [
+          "Temperature sensing",
+          "App-based monitoring"
+        ],
+        "differences": "May include additional sensors (fill level, weight) or features beyond temperature measurement specific to a water bottle.",
+        "similarity_score": 0.6
+      }
+    ],
+    "similarity_score": 0.6,
+    "similarity_explanation": "The invention is a bottle-integrated temperature sensor with BLE reporting to a smartphone. Similar concepts include BLE-enabled temperature sensing devices and smart drinkware. The strongest overlap is the combination of temperature sensing and BLE data transmission, while the bottle-specific integration and product-specific app features represent the main differentiating aspects.",
+    "potentially_overlapping_areas": [
+      "Consumer IoT sensors",
+      "Smart hydration devices",
+      "Bluetooth-enabled health/fitness sensors",
+      "Mobile app integration for sensor data"
+    ],
+    "confidence": 0.6,
+    "disclaimer": "This analysis is based on the model's learned knowledge and is NOT a verified patent search."
+  }
+}
