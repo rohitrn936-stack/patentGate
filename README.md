@@ -75,15 +75,15 @@ ID exposed by the OpenAI API (not the ChatGPT display name).
 ## How to run the CLI
 
 ```bash
-python main.py "Create a water bottle that measures the temperature of the \
+python -m agent1.main "Create a water bottle that measures the temperature of the \
 liquid using a sensor in the cap and sends the temperature to a smartphone \
 using Bluetooth."
 
 # with an optional image (PNG or JPG)
-python main.py "Smart measuring bottle" --image photos/bottle.png
+python -m agent1.main "Smart measuring bottle" --image photos/bottle.png
 
 # no argument: prompted interactively
-python main.py
+python -m agent1.main
 ```
 
 The structured JSON is printed to stdout.
@@ -139,26 +139,37 @@ The structured JSON is printed to stdout.
 
 ```
 patentGate/
-├── agent1/
-│   ├── __init__.py      # run_agent1() orchestrator + final validation
-│   ├── extractor.py     # OpenAI: feature extraction + knowledge analysis
-│   └── schemas.py       # Pydantic models (the JSON contract)
-├── tests/
-│   └── test_agent1.py
-├── main.py              # CLI demo
-├── requirements.txt
+├── agent1/                       # Agent 1 (Feature Extractor + knowledge analysis)
+│   ├── __init__.py               # run_agent1() orchestrator + final validation
+│   ├── extractor.py              # OpenAI: feature extraction + knowledge analysis
+│   ├── schemas.py                # Pydantic models (the JSON contract)
+│   ├── main.py                   # Agent 1 CLI demo
+│   ├── server.py                 # Agent 1 FastAPI HTTP server
+│   └── tests/
+│       ├── test_agent1.py
+│       └── test_server.py
+├── agent3/                       # Agent 3 (Defender)
+│   ├── agent.py
+│   ├── server.py
+│   ├── schemas.py
+│   ├── requirements.txt
+│   ├── .env.example
+│   ├── README.md
+│   └── tests/
+│       └── test_agent3.py
+├── requirements.txt              # shared project dependencies
 ├── .env / .env.example
 └── README.md
 ```
 
 ## Running the local HTTP API server
 
-A FastAPI server (`server.py`) exposes the same Agent 1 pipeline over HTTP.
+Agent 1's FastAPI server lives in `agent1/server.py`.
 
 Start it with:
 
 ```bash
-uvicorn server:app --reload
+uvicorn agent1.server:app --reload --port 8000
 ```
 
 The server listens on `http://127.0.0.1:8000` by default.

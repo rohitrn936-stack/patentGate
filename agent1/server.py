@@ -18,10 +18,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from agent1 import run_agent1
+from . import run_agent1
 
 RESULTS_FILE = "results.json"
-RESULTS_DIR = os.path.dirname(os.path.abspath(__file__))
+# The project root (parent of the agent1/ package), where results.json lives.
+RESULTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 app = FastAPI(title="PatentGate Agent 1", version="1.0.0")
 load_dotenv()

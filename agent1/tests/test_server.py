@@ -14,7 +14,7 @@ from unittest import mock
 import pytest
 from fastapi.testclient import TestClient
 
-import server
+from agent1 import server
 from agent1.schemas import KnowledgeAnalysis, SimilarConcept
 
 
