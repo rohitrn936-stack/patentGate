@@ -8,6 +8,12 @@ type InputPayload = {
   productImage: File | null;
 };
 
+type Agent1Result = {
+  success: boolean;
+  result?: any;
+  error?: string;
+};
+
 const acceptedImageTypes = ["image/png", "image/jpeg", "image/webp"];
 
 export default function Home() {
@@ -16,6 +22,8 @@ export default function Home() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPrepared, setIsPrepared] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [agent1Result, setAgent1Result] = useState<Agent1Result | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,6 +38,7 @@ export default function Home() {
     const nextImage = event.target.files?.[0] ?? null;
     setErrorMessage("");
     setIsPrepared(false);
+    setAgent1Result(null);
 
     if (!nextImage) {
       return;
@@ -59,13 +68,14 @@ export default function Home() {
     setProductImage(null);
     setImagePreview(null);
     setIsPrepared(false);
+    setAgent1Result(null);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmedDescription = productDescription.trim();
@@ -83,6 +93,121 @@ export default function Home() {
     setProductDescription(payload.productDescription);
     setErrorMessage("");
     setIsPrepared(true);
+    setIsLoading(true);
+    setAgent1Result(null);
+
+    try {
+      const response = await fetch("/api/agent1", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ input: payload.productDescription }),
+      });
+
+      const data: Agent1Result = await response.json();
+      setAgent1Result(data);
+    } catch (error) {
+      console.error("Agent 1 API error:", error);
+      setAgent1Result({
+        success: false,
+        error: "Failed to connect to backend. Is the server running?",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderResult = () => {
+    if (!agent1Result) return null;
+
+    if (agent1Result.success && agent1Result.result) {
+      const result = agent1Result.result;
+      return (
+        <section className="result-stage" aria-labelledby="result-title">
+          <h2 id="result-title" className="result-title">
+            Analysis Complete
+          </h2>
+          <div className="result-content">
+            <div className="result-section">
+              <h3>Product</h3>
+              <p><strong>Name:</strong> {result.product?.name || "N/A"}</p>
+              <p><strong>Summary:</strong> {result.product?.summary || "N/A"}</p>
+            </div>
+
+            <div className="result-section">
+              <h3>Components ({result.components?.length || 0})</h3>
+              <ul>
+                {result.components?.map((c: any) => (
+                  <li key={c.id}>
+                    <strong>{c.name}</strong> ({c.id}): {c.description}
+                    {c.function && <em> — {c.function}</em>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="result-section">
+              <h3>Features ({result.features?.length || 0})</h3>
+              <ul>
+                {result.features?.map((f: any) => (
+                  <li key={f.id}>
+                    <strong>{f.name}</strong> ({f.id})
+                    <br />
+                    Component: {f.component} | Function: {f.function}
+                    <br />
+                    Evidence: {f.evidence} <em>({f.evidence_source})</em>
+                    <br />
+                    Confidence: {(f.confidence * 100).toFixed(0)}%
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="result-section">
+              <h3>Knowledge Analysis</h3>
+              {result.analysis && (
+                <>
+                  <p><strong>Invention:</strong> {result.analysis.invention}</p>
+                  <p><strong>Similarity Score:</strong> {(result.analysis.similarity_score * 100).toFixed(0)}%</p>
+                  <p><strong>Explanation:</strong> {result.analysis.similarity_explanation}</p>
+                  <p><strong>Disclaimer:</strong> <em>{result.analysis.disclaimer}</em></p>
+                  <div>
+                    <h4>Similar Known Concepts ({result.analysis.similar_known_concepts?.length || 0})</h4>
+                    <ul>
+                      {result.analysis.similar_known_concepts?.map((c: any, i: number) => (
+                        <li key={i}>
+                          <strong>{c.name}</strong> (Score: {(c.similarity_score * 100).toFixed(0)}%)
+                          <br />
+                          Why similar: {c.why_similar}
+                          <br />
+                          Matching features: {c.matching_features?.join(", ") || "N/A"}
+                          <br />
+                          Differences: {c.differences}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (!agent1Result.success) {
+      return (
+        <section className="result-stage error" aria-labelledby="error-title">
+          <h2 id="error-title" className="result-title">Analysis Failed</h2>
+          <div className="error-message">
+            {agent1Result.error || "Unknown error occurred"}
+          </div>
+        </section>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -119,9 +244,11 @@ export default function Home() {
               setProductDescription(event.target.value);
               setErrorMessage("");
               setIsPrepared(false);
+              setAgent1Result(null);
             }}
             placeholder="Example: A wearable device that continuously monitors heart rate and sends alerts to a smartphone."
             rows={9}
+            disabled={isLoading}
           />
 
           <div className="upload-panel">
@@ -139,6 +266,7 @@ export default function Home() {
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={handleImageChange}
+              disabled={isLoading}
             />
 
             {imagePreview ? (
@@ -152,7 +280,7 @@ export default function Home() {
                 />
                 <div className="image-meta">
                   <p>{productImage?.name}</p>
-                  <button type="button" className="secondary-button" onClick={removeImage}>
+                  <button type="button" className="secondary-button" onClick={removeImage} disabled={isLoading}>
                     Remove image
                   </button>
                 </div>
@@ -166,17 +294,19 @@ export default function Home() {
           </div>
 
           {errorMessage ? <p className="validation-message">{errorMessage}</p> : null}
-          {isPrepared ? (
+          {isPrepared && !isLoading && !agent1Result ? (
             <p className="success-message">
-              Input validated. Product details are ready for the next pipeline stage.
+              Input validated. Product details are ready for analysis.
             </p>
           ) : null}
 
-          <button className="primary-button" type="submit">
-            Analyze Product
+          <button className="primary-button" type="submit" disabled={isLoading || !productDescription.trim()}>
+            {isLoading ? "Analyzing..." : "Analyze Product"}
           </button>
         </form>
       </section>
+
+      {renderResult()}
     </main>
   );
 }

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import verify_database_connection
-from app.routes import analyses, auth, products
+from app.routes import analyses, auth, products, agent1
 
 
 settings = get_settings()
@@ -21,6 +21,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(analyses.router)
+app.include_router(agent1.router)
 
 
 @app.get("/health")

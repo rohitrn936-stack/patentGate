@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(60, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     frontend_origin: str = Field("http://localhost:3000", alias="FRONTEND_ORIGIN")
+    agent1_server_url: str = Field("http://localhost:8001", alias="AGENT1_SERVER_URL")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

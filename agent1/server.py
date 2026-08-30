@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from . import run_agent1
+from . import mask_secrets, run_agent1
 
 RESULTS_FILE = "results.json"
 # The project root (parent of the agent1/ package), where results.json lives.
@@ -49,7 +49,14 @@ def analyze(request: AnalyzeRequest) -> dict:
     if not description:
         return {"status": "error", "error": "Product description is empty."}
 
-    result = run_agent1(description, load_env=False)
+    try:
+        result = run_agent1(description, load_env=False)
+    except Exception as exc:
+        # Never leak secrets/stack traces; return a clean structured error.
+        return {
+            "status": "error",
+            "error": f"Agent 1 failed: {type(exc).__name__}: {mask_secrets(str(exc))}",
+        }
 
     payload = json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
 
