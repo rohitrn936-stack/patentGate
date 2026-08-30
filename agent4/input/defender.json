@@ -1,0 +1,18 @@
+{
+  "distinctions": [
+    {
+      "patent_id": "US345678",
+      "claim_id": "Claim 1",
+      "distinction": "Alternative architecture does not calculate a numerical risk score."
+    }
+  ],
+  "prior_art_gaps": [],
+  "weak_claim_elements": [
+    {
+      "patent_id": "US345678",
+      "claim_id": "Claim 1",
+      "claim_element": "Calculating a risk score",
+      "weakness": "The product could use rule-based classifications instead of a numerical score."
+    }
+  ]
+}

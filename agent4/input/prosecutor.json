@@ -1,0 +1,27 @@
+{
+  "risk_claims": [
+    {
+      "patent_id": "US345678",
+      "claim_id": "Claim 1",
+      "risk_level": "High",
+      "reason": "The claim generates a risk score from historical transaction information."
+    }
+  ],
+  "claim_element_mappings": [
+    {
+      "patent_id": "US345678",
+      "claim_id": "Claim 1",
+      "claim_element": "Calculating a risk score based on historical information",
+      "product_feature": "Generates a fraud risk score",
+      "strength": "High",
+      "explanation": "Direct mapping."
+    }
+  ],
+  "confidence_per_patent": [
+    {
+      "patent_id": "US345678",
+      "confidence": 0.92,
+      "explanation": "Direct mapping to historical data and risk-score generation."
+    }
+  ]
+}

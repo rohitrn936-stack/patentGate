@@ -1,0 +1,10 @@
+{
+  "name": "Example Fraud Detection Platform",
+  "description": "A platform that analyzes user transactions and generates fraud risk scores.",
+  "features": [
+    "Analyzes user transaction behavior",
+    "Detects suspicious financial transactions",
+    "Uses historical transaction data",
+    "Generates a fraud risk score"
+  ]
+}
