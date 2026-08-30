@@ -1,7 +1,7 @@
 import json
 import sys
 
-from agent import analyze_product
+from agent import analyze_product, MODEL_NAME
 
 
 def load_input():
@@ -125,7 +125,7 @@ def main():
 
     print()
     print("Running Prosecutor Agent...")
-    print("Model: gpt-5-nano")
+    print(f"Model: {MODEL_NAME}")
     print("Search: Disabled")
     print()
 

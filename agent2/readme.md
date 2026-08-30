@@ -21,19 +21,19 @@ The documentation MUST contain the following:
 Explain that when Agent 4 is running locally:
 
 Health:
-GET http://127.0.0.1:8000/health
+GET http://127.0.0.1:8004/health
 
 Main design endpoint:
-POST http://127.0.0.1:8000/design
+POST http://127.0.0.1:8004/design
 
 Streaming endpoint:
-POST http://127.0.0.1:8000/design/stream
+POST http://127.0.0.1:8004/design/stream
 
 Explain that if Agent 2 is running on another computer, 127.0.0.1 will NOT work.
 
 Instead Agent 2 must use the Agent 4 computer's LAN IPv4 address, for example:
 
-http://172.18.11.215:8000/design
+http://172.18.11.215:8004/design
 
 Clearly explain that the IP address must be replaced with the actual IP address of the computer running Agent 4.
 
@@ -138,7 +138,7 @@ Give exact beginner-friendly Postman instructions:
 3. Create a new POST request.
 4. Enter:
 
-http://127.0.0.1:8000/design
+http://127.0.0.1:8004/design
 
 5. Go to Body.
 6. Select raw.
@@ -161,7 +161,7 @@ Example structure:
 
 import requests
 
-url = "http://127.0.0.1:8000/design"
+url = "http://127.0.0.1:8004/design"
 
 payload = {
     "product": product_data,
@@ -246,19 +246,19 @@ Clearly explain:
 
 If Agent 2 and Agent 4 are on the SAME COMPUTER:
 
-http://127.0.0.1:8000/design
+http://127.0.0.1:8004/design
 
 If Agent 2 and Agent 4 are on DIFFERENT computers on the same Wi-Fi/LAN:
 
-http://AGENT4_COMPUTER_IP:8000/design
+http://AGENT4_COMPUTER_IP:8004/design
 
 Example:
 
-http://172.18.11.215:8000/design
+http://172.18.11.215:8004/design
 
 Explain that Agent 4 must be started with:
 
-uvicorn server:app --reload --host 0.0.0.0 --port 8000
+uvicorn server:app --reload --host 0.0.0.0 --port 8004
 
 Explain that Windows Firewall may need to allow Python/Uvicorn to accept connections.
 

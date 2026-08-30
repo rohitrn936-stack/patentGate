@@ -3,14 +3,15 @@ import json
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
-from models import (
+from agent2.models import (
     ProsecutorRequest,
     ProsecutorOutput
 )
 
-from agent import (
+from agent2.agent import (
     analyze_product,
-    stream_analysis
+    stream_analysis,
+    MODEL_NAME,
 )
 
 
@@ -31,7 +32,7 @@ def health_check():
     return {
         "status": "ok",
         "agent": "prosecutor",
-        "model": "gpt-5-nano",
+        "model": MODEL_NAME,
         "streaming": True
     }
 

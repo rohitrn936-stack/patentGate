@@ -5,7 +5,7 @@ import sys
 import requests
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-URL = "http://127.0.0.1:8000/design"
+URL = "http://127.0.0.1:8004/design"
 
 OUTPUT_FILE = os.path.join(BASE_DIR, "output", "design_output.json")
 

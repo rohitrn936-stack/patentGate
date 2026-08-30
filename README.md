@@ -169,17 +169,17 @@ Agent 1's FastAPI server lives in `agent1/server.py`.
 Start it with:
 
 ```bash
-uvicorn agent1.server:app --reload --port 8000
+uvicorn agent1.server:app --reload --port 8001
 ```
 
-The server listens on `http://127.0.0.1:8000` by default.
+The server listens on `http://127.0.0.1:8001` by default.
 
 ### Endpoints
 
 **`GET /health`** — liveness probe.
 
 ```bash
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8001/health
 ```
 
 Returns:
@@ -193,7 +193,7 @@ returns the same structured JSON as `main.py` and writes the result to
 `results.json`.
 
 ```bash
-curl -X POST http://127.0.0.1:8000/analyze \
+curl -X POST http://127.0.0.1:8001/analyze \
   -H "Content-Type: application/json" \
   -d '{"product_description": "A smart water bottle that measures liquid temperature using a sensor and sends the temperature to a smartphone using Bluetooth."}'
 ```

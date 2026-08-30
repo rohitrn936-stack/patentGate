@@ -4,10 +4,10 @@ Consumes Agent 2's (Prosecutor's) JSON and returns a defense analysis for
 Agent 4 to consume.
 
 Run (from the agent3 directory):
-    uvicorn server:app --reload --port 8002
+    uvicorn server:app --reload --port 8003
 
 Run (from the patentGate directory):
-    uvicorn agent3.server:app --reload --port 8002
+    uvicorn agent3.server:app --reload --port 8003
 """
 
 from __future__ import annotations

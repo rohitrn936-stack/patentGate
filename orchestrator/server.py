@@ -4,10 +4,10 @@ Exposes ``POST /run`` (execute Agent 2 -> Agent 3 -> Agent 4 iteration) and
 ``GET /health``.
 
 Run (from the orchestrator directory):
-    uvicorn server:app --reload --port 8004
+    uvicorn server:app --reload --port 8000
 
 Run (from the patentGate directory):
-    uvicorn orchestrator.server:app --reload --port 8004
+    uvicorn orchestrator.server:app --reload --port 8000
 """
 
 from __future__ import annotations

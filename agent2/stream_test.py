@@ -2,7 +2,7 @@ import requests
 import json
 
 
-URL = "http://127.0.0.1:8000/analyze/stream"
+URL = "http://127.0.0.1:8002/analyze/stream"
 
 # ------------------------------------------------------------
 # TEST INPUT
@@ -265,7 +265,7 @@ except requests.exceptions.ConnectionError:
     )
     print()
     print(
-        "uvicorn server:app --reload --host 0.0.0.0 --port 8000"
+        "uvicorn server:app --reload --host 0.0.0.0 --port 8002"
     )
 
 

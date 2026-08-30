@@ -6,7 +6,7 @@ import json
 # AGENT 2 URL
 # ============================================================
 
-AGENT_2_URL = "http://127.0.0.1:8000/analyze/stream"
+AGENT_2_URL = "http://127.0.0.1:8002/analyze/stream"
 
 
 # ============================================================
@@ -235,7 +235,7 @@ except requests.exceptions.ConnectionError:
     print()
     print(
         "uvicorn server:app --reload "
-        "--host 0.0.0.0 --port 8000"
+        "--host 0.0.0.0 --port 8002"
     )
 
 

@@ -1,16 +1,24 @@
 import os
 import json
+from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from models import ProsecutorOutput
+from agent2.models import ProsecutorOutput
 
 
-load_dotenv()
+# Load the shared root .env (project root is two levels up from this module).
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(_ROOT_DIR / ".env")
+
+# Fallback model ID used when OPENAI_MODEL is unset (matches Agents 1 and 3).
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+
+MODEL_NAME = os.getenv("OPENAI_MODEL") or DEFAULT_OPENAI_MODEL
 
 client = OpenAI(
-    api_key=os.getenv("API_KEY")
+    api_key=os.getenv("OPENAI_API_KEY")
 )
 
 
@@ -134,7 +142,7 @@ def analyze_product(product, patents):
     """
 
     response = client.responses.create(
-        model="gpt-5-nano",
+        model=MODEL_NAME,
         instructions=SYSTEM_PROMPT,
         input=build_prompt(product, patents)
     )
@@ -159,7 +167,7 @@ def stream_analysis(product, patents):
     """
 
     stream = client.responses.create(
-        model="gpt-5-nano",
+        model=MODEL_NAME,
         instructions=SYSTEM_PROMPT,
         input=build_prompt(product, patents),
         stream=True

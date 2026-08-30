@@ -41,7 +41,7 @@ Then edit `.env`:
 
 ```
 OPENAI_API_KEY=your_api_key_here
-MODEL_NAME=gpt-5-nano
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 > Never commit `.env`. It is already listed in `.gitignore`.
@@ -49,7 +49,7 @@ MODEL_NAME=gpt-5-nano
 ## 3. Start the server
 
 ```powershell
-uvicorn server:app --reload --host 0.0.0.0 --port 8000
+uvicorn server:app --reload --host 0.0.0.0 --port 8004
 ```
 
 ## 4. API endpoints
@@ -57,7 +57,7 @@ uvicorn server:app --reload --host 0.0.0.0 --port 8000
 ### `GET /health`
 
 ```
-http://127.0.0.1:8000/health
+http://127.0.0.1:8004/health
 ```
 
 Response:
@@ -66,14 +66,14 @@ Response:
 {
   "status": "ok",
   "agent": "design-engineer",
-  "model": "gpt-5-nano"
+  "model": "gpt-4o-mini"
 }
 ```
 
 ### `POST /design`
 
 ```
-http://127.0.0.1:8000/design
+http://127.0.0.1:8004/design
 ```
 
 This is the primary endpoint. It accepts `product`, `prosecutor`, and
@@ -83,7 +83,7 @@ saves it to `output/design_output.json`, and returns it as JSON.
 ### `POST /design/stream`
 
 ```
-http://127.0.0.1:8000/design/stream
+http://127.0.0.1:8004/design/stream
 ```
 
 Streaming version using Server-Sent Events (SSE) with
@@ -182,7 +182,7 @@ Agent 2 sends its analysis output as the `prosecutor` field via an HTTP POST to
 
 ```python
 requests.post(
-    "http://127.0.0.1:8000/design",
+    "http://127.0.0.1:8004/design",
     json={
         "product": {...},
         "prosecutor": <agent2_output_json>,

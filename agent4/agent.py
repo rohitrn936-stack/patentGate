@@ -1,15 +1,21 @@
 import os
 import json
+from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from models import DesignOutput
+from agent4.models import DesignOutput
 
 
-load_dotenv()
+# Load the shared root .env (project root is two levels up from this module).
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(_ROOT_DIR / ".env")
 
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-5-nano")
+# Fallback model ID used when OPENAI_MODEL is unset (matches Agents 1 and 3).
+DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+
+MODEL_NAME = os.getenv("OPENAI_MODEL") or DEFAULT_OPENAI_MODEL
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")

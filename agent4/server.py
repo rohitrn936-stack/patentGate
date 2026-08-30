@@ -5,12 +5,12 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
-from models import (
+from agent4.models import (
     DesignRequest,
     DesignOutput
 )
 
-from agent import (
+from agent4.agent import (
     MODEL_NAME,
     client,
     generate_designs,

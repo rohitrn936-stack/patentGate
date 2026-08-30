@@ -6,9 +6,9 @@ via HTTP and never imports their internal classes.
 
 Configuration (environment variables):
 
-- ``AGENT2_URL`` - base URL of Agent 2 (default ``http://127.0.0.1:8000``)
-- ``AGENT3_URL`` - base URL of Agent 3 (default ``http://127.0.0.1:8002``)
-- ``AGENT4_URL`` - base URL of Agent 4 (default ``http://127.0.0.1:8003``)
+- ``AGENT2_URL`` - base URL of Agent 2 (default ``http://127.0.0.1:8002``)
+- ``AGENT3_URL`` - base URL of Agent 3 (default ``http://127.0.0.1:8003``)
+- ``AGENT4_URL`` - base URL of Agent 4 (default ``http://127.0.0.1:8004``)
 - ``MAX_ITERATIONS`` - maximum refinement iterations (default 3)
 - ``HTTP_TIMEOUT`` - per-request timeout in seconds (default 60)
 
@@ -33,9 +33,9 @@ import httpx
 
 from .schemas import IterationRecord, RunResult
 
-DEFAULT_AGENT2_URL = "http://127.0.0.1:8000"
-DEFAULT_AGENT3_URL = "http://127.0.0.1:8002"
-DEFAULT_AGENT4_URL = "http://127.0.0.1:8003"
+DEFAULT_AGENT2_URL = "http://127.0.0.1:8002"
+DEFAULT_AGENT3_URL = "http://127.0.0.1:8003"
+DEFAULT_AGENT4_URL = "http://127.0.0.1:8004"
 DEFAULT_MAX_ITERATIONS = 3
 DEFAULT_HTTP_TIMEOUT = 60.0
 

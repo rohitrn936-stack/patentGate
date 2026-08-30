@@ -4,7 +4,7 @@ Agent 3 is the **Defender** in the multi-agent patent analysis pipeline:
 
 ```
 Agent 1 (Feature Extractor)  →  Agent 2 (Prosecutor)  →  Agent 3 (Defender)  →  Agent 4 (Design Engineer)
-    :8000                          :8001                    :8002                    :8003
+    :8001                          :8002                    :8003                    :8004
 ```
 
 Agent 3 receives Agent 2's JSON (claim elements + prior-art information) and
@@ -77,7 +77,7 @@ to `1.0`.
 ### `GET /health`
 
 ```bash
-curl http://127.0.0.1:8002/health
+curl http://127.0.0.1:8003/health
 ```
 
 Returns:
@@ -89,7 +89,7 @@ Returns:
 ### `POST /analyze`
 
 ```bash
-curl -X POST http://127.0.0.1:8002/analyze \
+curl -X POST http://127.0.0.1:8003/analyze \
   -H "Content-Type: application/json" \
   -d @agent2_output.json
 ```
@@ -123,20 +123,20 @@ cp .env.example .env
 From the `agent3` directory:
 
 ```bash
-uvicorn server:app --reload --port 8002
+uvicorn server:app --reload --port 8003
 ```
 
 From the `patentGate` directory:
 
 ```bash
-uvicorn agent3.server:app --reload --port 8002
+uvicorn agent3.server:app --reload --port 8003
 ```
 
 ## How agents connect
 
 - **Agent 2 → Agent 3**: Agent 2 POSTs its JSON to
-  `http://<MAC_IP>:8002/analyze`.
-- **Agent 3 → Agent 4**: Agent 4 will later POST to its own `:8003/analyze`
+  `http://<MAC_IP>:8003/analyze`.
+- **Agent 3 → Agent 4**: Agent 4 will later POST to its own `:8004/analyze`
   and consume Agent 3's `defense_analysis` JSON directly.
 
 ## Tests
