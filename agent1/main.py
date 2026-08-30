@@ -25,6 +25,8 @@ from dotenv import load_dotenv
 from agent1 import run_agent1
 
 RESULTS_FILE = "results.json"
+# The project root (parent of the agent1/ package), where results.json lives.
+RESULTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def parse_args() -> argparse.Namespace:
@@ -79,7 +81,7 @@ def main() -> None:
     payload = json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
     print(payload)
 
-    results_path = os.path.join(os.path.dirname(__file__), RESULTS_FILE)
+    results_path = os.path.join(RESULTS_DIR, RESULTS_FILE)
     with open(results_path, "w", encoding="utf-8") as handle:
         handle.write(payload + "\n")
     print(f"Results saved to {RESULTS_FILE}")
