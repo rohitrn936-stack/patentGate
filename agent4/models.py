@@ -87,3 +87,37 @@ class DesignOutput(BaseModel):
         "infringement or freedom to operate. Legal review by a qualified "
         "patent attorney is required."
     )
+
+
+# ============================================================
+# Image generation layer (DALL-E / OpenAI Images)
+# ============================================================
+#
+# The image layer is a CONSUMER of Agent 4's DesignOutput. It accepts the
+# complete Agent 4 JSON (agent / status / alternatives / legal_disclaimer),
+# validates it, builds one image prompt per alternative, and generates one
+# engineering concept image per alternative.
+
+class DesignEngineerInput(DesignOutput):
+    """The complete Agent 4 output that the image layer consumes."""
+
+
+class GeneratedImage(BaseModel):
+    alternative_id: int
+    filename: str
+    path: str = ""
+    url: str = ""
+    prompt: str = ""
+
+
+class ImageGenerationError(BaseModel):
+    alternative_id: int
+    error: str
+
+
+class DesignImageResponse(BaseModel):
+    agent: str = "design-engineer"
+    status: str = "completed"
+    images: List[GeneratedImage] = Field(default_factory=list)
+    errors: List[ImageGenerationError] = Field(default_factory=list)
+    count: int = 0

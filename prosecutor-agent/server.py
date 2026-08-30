@@ -5,19 +5,19 @@ from fastapi.responses import StreamingResponse
 
 from models import (
     ProsecutorRequest,
-    ProsecutorOutput
+    ProsecutorOutput,
 )
 
 from agent import (
     analyze_product,
-    stream_analysis
+    stream_analysis,
 )
 
 
 app = FastAPI(
     title="PatentGate Prosecutor Agent",
     description="Agent 2 - Adversarial Patent Analysis",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 
@@ -31,8 +31,8 @@ def health_check():
     return {
         "status": "ok",
         "agent": "prosecutor",
-        "model": "gpt-5-nano",
-        "streaming": True
+        "model": "gemini-3.7-flash",
+        "streaming": True,
     }
 
 
@@ -42,22 +42,15 @@ def health_check():
 
 @app.post(
     "/analyze",
-    response_model=ProsecutorOutput
+    response_model=ProsecutorOutput,
 )
 def analyze(request: ProsecutorRequest):
 
     try:
 
-        product = request.product.model_dump()
-
-        patents = [
-            patent.model_dump()
-            for patent in request.patents
-        ]
-
         result = analyze_product(
-            product,
-            patents
+            request.product,
+            request.patents,
         )
 
         return result
@@ -66,7 +59,7 @@ def analyze(request: ProsecutorRequest):
 
         raise HTTPException(
             status_code=500,
-            detail=str(error)
+            detail=str(error),
         )
 
 
@@ -77,65 +70,42 @@ def analyze(request: ProsecutorRequest):
 @app.post("/analyze/stream")
 def analyze_stream(request: ProsecutorRequest):
 
-    product = request.product.model_dump()
-
-    patents = [
-        patent.model_dump()
-        for patent in request.patents
-    ]
-
-
     def event_generator():
 
         try:
 
-            # ------------------------------------------------
             # START EVENT
-            # ------------------------------------------------
-
             yield (
                 "event: status\n"
                 "data: "
                 + json.dumps({
                     "status": "started",
-                    "agent": "prosecutor"
+                    "agent": "prosecutor",
                 })
                 + "\n\n"
             )
 
-
-            # ------------------------------------------------
-            # STREAM GPT OUTPUT
-            # ------------------------------------------------
-
+            # GEMINI STREAM
             for event in stream_analysis(
-                product,
-                patents
+                request.product,
+                request.patents,
             ):
 
                 event_type = event["type"]
 
-
-                # --------------------------------------------
                 # TOKEN
-                # --------------------------------------------
-
                 if event_type == "token":
 
                     yield (
                         "event: token\n"
                         "data: "
                         + json.dumps({
-                            "text": event["text"]
+                            "text": event["text"],
                         })
                         + "\n\n"
                     )
 
-
-                # --------------------------------------------
-                # FINAL STRUCTURED RESULT
-                # --------------------------------------------
-
+                # FINAL RESULT
                 elif event_type == "result":
 
                     yield (
@@ -147,36 +117,27 @@ def analyze_stream(request: ProsecutorRequest):
                         + "\n\n"
                     )
 
-
-                # --------------------------------------------
                 # ERROR
-                # --------------------------------------------
-
                 elif event_type == "error":
 
                     yield (
                         "event: error\n"
                         "data: "
                         + json.dumps({
-                            "error": event["error"]
+                            "error": event["error"],
                         })
                         + "\n\n"
                     )
 
-
-            # ------------------------------------------------
-            # COMPLETE EVENT
-            # ------------------------------------------------
-
+            # COMPLETE
             yield (
                 "event: complete\n"
                 "data: "
                 + json.dumps({
-                    "status": "completed"
+                    "status": "completed",
                 })
                 + "\n\n"
             )
-
 
         except Exception as error:
 
@@ -184,11 +145,10 @@ def analyze_stream(request: ProsecutorRequest):
                 "event: error\n"
                 "data: "
                 + json.dumps({
-                    "error": str(error)
+                    "error": str(error),
                 })
                 + "\n\n"
             )
-
 
     return StreamingResponse(
         event_generator(),
@@ -196,6 +156,6 @@ def analyze_stream(request: ProsecutorRequest):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
-        }
+            "X-Accel-Buffering": "no",
+        },
     )

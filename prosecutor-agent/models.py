@@ -1,47 +1,48 @@
-from typing import List
+from typing import Any, Dict, List
+
 from pydantic import BaseModel, Field
 
 
-class Product(BaseModel):
-    name: str
-    description: str = ""
-    features: List[str]
+class ProsecutorRequest(BaseModel):
+
+    product: Dict[str, Any] = Field(
+        ...,
+        description="Product information from Agent 1"
+    )
+
+    patents: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Patent information retrieved by the patent search layer"
+    )
 
 
-class Patent(BaseModel):
-    id: str
-    summary: str
-    claims: str
+class ClaimElement(BaseModel):
 
+    claim_element: str
 
-class RiskClaim(BaseModel):
-    patent_id: str
-    claim_id: str
-    risk_level: str
+    product_feature: str
+
+    overlap: bool
+
+    risk: str
+
     reason: str
 
 
-class ClaimMapping(BaseModel):
-    patent_id: str
-    claim_id: str
-    claim_element: str
-    product_feature: str
-    strength: str
-    explanation: str
-
-
-class PatentConfidence(BaseModel):
-    patent_id: str
-    confidence: float = Field(ge=0, le=1)
-    explanation: str
-
-
 class ProsecutorOutput(BaseModel):
-    risk_claims: List[RiskClaim]
-    claim_element_mappings: List[ClaimMapping]
-    confidence_per_patent: List[PatentConfidence]
 
+    agent: str = "prosecutor"
 
-class ProsecutorRequest(BaseModel):
-    product: Product
-    patents: List[Patent] = Field(min_length=5, max_length=5)
+    risk_level: str
+
+    summary: str
+
+    claim_elements: List[ClaimElement] = Field(
+        default_factory=list
+    )
+
+    patents_analyzed: List[Any] = Field(
+        default_factory=list
+    )
+
+    disclaimer: str

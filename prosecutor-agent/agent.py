@@ -1,200 +1,211 @@
-import os
 import json
+import os
+from typing import Any, Dict, Generator, List
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from models import ProsecutorOutput
-
-
 load_dotenv()
 
+MODEL_NAME = os.getenv("MODEL_NAME", "gemini-3.7-flash")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    raise RuntimeError(
+        "GEMINI_API_KEY is missing. "
+        "Create a .env file and add GEMINI_API_KEY=your_key"
+    )
+
+# Gemini provides an OpenAI-compatible API.
 client = OpenAI(
-    api_key=os.getenv("API_KEY")
+    api_key=GEMINI_API_KEY,
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
 )
 
 
 SYSTEM_PROMPT = """
-You are the Prosecutor, also known as Adversarial Analyst A.
+You are Agent 2 — Prosecutor Agent in the PatentGate system.
 
-Your purpose is to argue the case that retrieved patents could
-potentially read on the user's product.
+Your job is to perform adversarial patent infringement analysis.
 
 You receive:
+1. A product description and its features.
+2. A list of relevant patents and their claims.
 
-1. Product feature information
-2. Patent summaries
-3. Patent claims
+Your job is to identify claim elements that could potentially be read
+onto the product.
 
-Your responsibilities are:
+You are NOT a lawyer and must NOT claim that infringement has been
+legally established.
 
-1. Analyze every supplied patent.
-2. Examine the claims of each patent.
-3. Break claims into individual claim elements.
-4. Compare each claim element with product features.
-5. Identify product features that correspond to claim elements.
-6. Identify potentially risky claims.
-7. Assign a confidence score from 0 to 1 for every patent.
+You must return structured JSON.
 
-You are the PROSECUTOR.
+Focus on:
+- Product features
+- Patent claim elements
+- Potential overlap
+- Risk level
+- Explanation
+- Evidence from the supplied patent information
 
-Actively look for evidence supporting potential overlap.
+Return JSON in this format:
 
-IMPORTANT:
+{
+    "agent": "prosecutor",
+    "risk_level": "high | medium | low",
+    "summary": "short explanation",
+    "claim_elements": [
+        {
+            "claim_element": "patent claim element",
+            "product_feature": "corresponding product feature",
+            "overlap": true,
+            "risk": "high | medium | low",
+            "reason": "why this could overlap"
+        }
+    ],
+    "patents_analyzed": [],
+    "disclaimer": "This is an AI-generated preliminary analysis and is not legal advice."
+}
 
-- Do NOT give legal advice.
-- Do NOT state that infringement definitely exists.
-- Do NOT state that a patent definitely covers the product.
-- Do NOT invent product features.
-- Do NOT invent patent information.
-- Do NOT use information that was not supplied.
-- Do NOT treat the analysis as a legal conclusion.
-
-Use cautious language such as:
-
-"potentially overlaps"
-"appears to correspond"
-"could read on"
-"based on the supplied information"
-
-Confidence represents confidence in the claim-to-product mapping.
-
-It does NOT represent probability of legal infringement.
-
-Return ONLY valid JSON for the final analysis.
+Do not invent patent information.
+Only use information supplied in the request.
 """
 
 
-def build_prompt(product, patents):
+def _build_messages(
+    product: Dict[str, Any],
+    patents: List[Dict[str, Any]],
+) -> List[Dict[str, str]]:
 
-    return f"""
-Analyze the product against all five supplied patents.
+    user_prompt = f"""
+Analyze the following product against the supplied patents.
 
 PRODUCT:
-
 {json.dumps(product, indent=2)}
 
-
 PATENTS:
-
 {json.dumps(patents, indent=2)}
 
-
-For every patent:
-
-1. Examine its claims.
-2. Break claims into individual elements.
-3. Map claim elements to product features where appropriate.
-4. Identify potentially risky claims.
-5. Explain the reasoning behind each mapping.
-6. Assign a confidence score between 0 and 1.
-
-Look specifically for evidence that the supplied product features
-could correspond to elements of the supplied patent claims.
-
-Do not invent missing information.
-
-Do not make a definitive legal determination.
-
-Return JSON with exactly these top-level fields:
-
-{{
-    "risk_claims": [],
-    "claim_element_mappings": [],
-    "confidence_per_patent": []
-}}
-
-Each risk_claim must contain:
-
-- patent_id
-- claim_id
-- risk_level
-- reason
-
-Each claim_element_mapping must contain:
-
-- patent_id
-- claim_id
-- claim_element
-- product_feature
-- strength
-- explanation
-
-Each confidence_per_patent must contain:
-
-- patent_id
-- confidence
-- explanation
+Return ONLY valid JSON.
+Do not use markdown.
+Do not wrap the JSON in ```json blocks.
 """
 
+    return [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT,
+        },
+        {
+            "role": "user",
+            "content": user_prompt,
+        },
+    ]
 
-def analyze_product(product, patents):
-    """
-    Normal non-streaming analysis.
-    """
 
-    response = client.responses.create(
-        model="gpt-5-nano",
-        instructions=SYSTEM_PROMPT,
-        input=build_prompt(product, patents)
+def _parse_result(text: str) -> Dict[str, Any]:
+
+    text = text.strip()
+
+    # Remove accidental markdown fences if Gemini returns them.
+    if text.startswith("```json"):
+        text = text[7:]
+
+    if text.startswith("```"):
+        text = text[3:]
+
+    if text.endswith("```"):
+        text = text[:-3]
+
+    text = text.strip()
+
+    try:
+        return json.loads(text)
+
+    except json.JSONDecodeError:
+
+        return {
+            "agent": "prosecutor",
+            "risk_level": "unknown",
+            "summary": text,
+            "claim_elements": [],
+            "patents_analyzed": [],
+            "disclaimer": (
+                "This is an AI-generated preliminary analysis "
+                "and is not legal advice."
+            ),
+        }
+
+
+def analyze_product(
+    product: Dict[str, Any],
+    patents: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+
+    messages = _build_messages(product, patents)
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        temperature=0.2,
+        response_format={
+            "type": "json_object"
+        },
     )
 
-    output_text = response.output_text
+    content = response.choices[0].message.content
 
-    result = ProsecutorOutput.model_validate_json(
-        output_text
-    )
+    if not content:
+        raise RuntimeError("Gemini returned an empty response.")
 
-    return result
+    return _parse_result(content)
 
 
-def stream_analysis(product, patents):
-    """
-    Streaming analysis.
+def stream_analysis(
+    product: Dict[str, Any],
+    patents: List[Dict[str, Any]],
+) -> Generator[Dict[str, Any], None, None]:
 
-    Returns:
+    messages = _build_messages(product, patents)
 
-        text_chunks
-        final structured result
-    """
-
-    stream = client.responses.create(
-        model="gpt-5-nano",
-        instructions=SYSTEM_PROMPT,
-        input=build_prompt(product, patents),
-        stream=True
-    )
-
-    complete_text = ""
-
-    for event in stream:
-
-        if event.type == "response.output_text.delta":
-
-            chunk = event.delta
-
-            complete_text += chunk
-
-            yield {
-                "type": "token",
-                "text": chunk
-            }
-
-    # Parse the complete JSON after streaming finishes.
     try:
 
-        result = ProsecutorOutput.model_validate_json(
-            complete_text
+        stream = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=0.2,
+            stream=True,
         )
+
+        full_text = ""
+
+        for chunk in stream:
+
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+
+            text = delta.content
+
+            if text:
+                full_text += text
+
+                yield {
+                    "type": "token",
+                    "text": text,
+                }
+
+        result = _parse_result(full_text)
 
         yield {
             "type": "result",
-            "data": result.model_dump()
+            "data": result,
         }
 
     except Exception as error:
 
         yield {
             "type": "error",
-            "error": f"Could not parse final structured output: {str(error)}"
+            "error": str(error),
         }
