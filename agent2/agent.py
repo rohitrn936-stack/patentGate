@@ -12,13 +12,16 @@ from agent2.models import ProsecutorOutput
 _ROOT_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(_ROOT_DIR / ".env")
 
-# Fallback model ID used when OPENAI_MODEL is unset (matches Agents 1 and 3).
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
-MODEL_NAME = os.getenv("OPENAI_MODEL") or DEFAULT_OPENAI_MODEL
+# Model ID used for NVIDIA DeepSeek.
+DEFAULT_MODEL = "deepseek-ai/deepseek-v4-pro-0813"
+
+MODEL_NAME = os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
+    base_url=NVIDIA_BASE_URL,
+    api_key=os.getenv("NVIDIA_API_KEY")
 )
 
 

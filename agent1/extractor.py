@@ -19,6 +19,10 @@ from .schemas import FeatureExtraction, KnowledgeAnalysis
 SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 IMAGE_MIME_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 
+# NVIDIA OpenAI-compatible endpoint.
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+DEFAULT_MODEL = "deepseek-ai/deepseek-v4-pro-0813"
+
 # Prompt template used when sending the extraction request to OpenAI.
 SYSTEM_FEATURE_EXTRACTION = """You are a technical product analyst for a prior-art patent research tool.
 
@@ -155,12 +159,12 @@ def load_image_as_data_url(image_path: str) -> str:
 class FeatureExtractor:
     """Wraps the OpenAI API for feature extraction and query generation."""
 
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(self, api_key: str, model: str, base_url: str = NVIDIA_BASE_URL) -> None:
         if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is empty or missing.")
+            raise RuntimeError("NVIDIA_API_KEY is empty or missing.")
         if not model:
             raise RuntimeError("OPENAI_MODEL is empty or missing.")
-        self._client = OpenAI(api_key=api_key)
+        self._client = OpenAI(base_url=base_url, api_key=api_key)
         self._model = model
 
     def _complete_json(

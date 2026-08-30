@@ -27,7 +27,7 @@ from .extractor import FeatureExtractor, load_image_as_data_url
 from .schemas import Agent1Output, KnowledgeAnalysis
 
 # Sensible default. Override via OPENAI_MODEL in .env.
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+DEFAULT_OPENAI_MODEL = "deepseek-ai/deepseek-v4-pro-0813"
 
 # Redacts anything that looks like an API key so errors never leak secrets.
 _SECRET_PATTERN = re.compile(r"(sk-[A-Za-z0-9_-]+|AIza[A-Za-z0-9_-]{15,})")
@@ -80,7 +80,7 @@ def run_agent1(
     # Create the OpenAI backend unless it was injected.
     if extractor is None:
         extractor = FeatureExtractor(
-            api_key=_env("OPENAI_API_KEY"),
+            api_key=_env("NVIDIA_API_KEY"),
             model=_optional_env("OPENAI_MODEL", DEFAULT_OPENAI_MODEL),
         )
 

@@ -6,7 +6,7 @@ JSON (claim elements + prior-art information) and produces a structured
 a new patent search.
 
 API key resolution (in order):
-1. ``OPENAI_API_KEY`` environment variable (loaded from ``.env``).
+1. ``NVIDIA_API_KEY`` environment variable (loaded from ``.env``).
 2. An explicit ``api_key`` passed to the constructor.
 
 Model resolution:
@@ -29,7 +29,10 @@ from openai import OpenAI
 from .schemas import DefenseAnalysis
 
 # Fallback OpenAI model used by Agent 3 when OPENAI_MODEL is unset.
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+DEFAULT_OPENAI_MODEL = "deepseek-ai/deepseek-v4-pro-0813"
+
+# NVIDIA OpenAI-compatible endpoint.
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 # Redacts anything that looks like a credential so errors never leak secrets.
 _SECRET_PATTERN = re.compile(r"(sk-[A-Za-z0-9_-]+|sk-proj-[A-Za-z0-9_-]+)")
@@ -115,7 +118,7 @@ class Defender:
         if not self._api_key:
             import os
 
-            self._api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
+            self._api_key = (os.getenv("NVIDIA_API_KEY") or "").strip()
         if not self._model:
             import os
 
@@ -123,11 +126,14 @@ class Defender:
 
         if not self._api_key:
             raise RuntimeError(
-                "OPENAI_API_KEY is empty or missing. Add it to your .env file "
+                "NVIDIA_API_KEY is empty or missing. Add it to your .env file "
                 "or the agent3/.env file and try again."
             )
 
-        self._client = OpenAI(api_key=self._api_key)
+        self._client = OpenAI(
+            base_url=NVIDIA_BASE_URL,
+            api_key=self._api_key,
+        )
 
     def _complete_json(self, payload: dict) -> dict:
         """Send the Agent 2 payload to OpenAI and return parsed JSON."""

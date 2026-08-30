@@ -33,7 +33,7 @@ def _check_api_key():
     if client.api_key is None:
         raise HTTPException(
             status_code=500,
-            detail="Missing API key. Configure OPENAI_API_KEY in your .env file."
+            detail="Missing API key. Configure NVIDIA_API_KEY in your .env file."
         )
 
 
