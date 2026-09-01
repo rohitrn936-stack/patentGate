@@ -10,7 +10,6 @@ Run from the repo root:
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -20,7 +19,7 @@ from .schemas import ProsecutorRequest, ProsecutorResponse
 
 app = FastAPI(title="PatentGate Agent 2 - Prosecutor", version="2.0.0")
 
-_prosecutor: Optional[Prosecutor] = None
+_prosecutor: Prosecutor | None = None
 
 
 def _get_prosecutor() -> Prosecutor:

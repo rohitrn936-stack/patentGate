@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -86,7 +85,7 @@ def _build_user_prompt(product: dict, patents: list[dict]) -> str:
 class Prosecutor:
     """Agent 2 analysis, provider-agnostic."""
 
-    def __init__(self, llm: Optional[LLMProvider] = None) -> None:
+    def __init__(self, llm: LLMProvider | None = None) -> None:
         load_dotenv()
         self._llm = llm
 

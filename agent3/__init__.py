@@ -3,8 +3,8 @@
 from .agent import Defender
 from .schemas import (
     AnalyzeRequest,
-    DefenseAnalysis,
     DefenderResponse,
+    DefenseAnalysis,
     Distinction,
     PriorArtGap,
     WeakClaimElement,

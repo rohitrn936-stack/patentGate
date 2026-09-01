@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -92,7 +91,7 @@ def _mask(text: str) -> str:
 class Defender:
     """Runs Agent 3's defense analysis through the provider-agnostic layer."""
 
-    def __init__(self, llm: Optional[LLMProvider] = None) -> None:
+    def __init__(self, llm: LLMProvider | None = None) -> None:
         load_dotenv()
         self._llm = llm
 

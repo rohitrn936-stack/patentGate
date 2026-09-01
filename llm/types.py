@@ -43,15 +43,15 @@ class Message(BaseModel):
     tool_call_id: str | None = None
 
     @classmethod
-    def system(cls, text: str) -> "Message":
+    def system(cls, text: str) -> Message:
         return cls(role="system", content=text)
 
     @classmethod
-    def user(cls, content: str | list[ContentPart]) -> "Message":
+    def user(cls, content: str | list[ContentPart]) -> Message:
         return cls(role="user", content=content)
 
     @classmethod
-    def assistant(cls, text: str) -> "Message":
+    def assistant(cls, text: str) -> Message:
         return cls(role="assistant", content=text)
 
 
@@ -76,7 +76,7 @@ class Usage(BaseModel):
     completion_tokens: int = 0
     total_tokens: int = 0
 
-    def __add__(self, other: "Usage") -> "Usage":
+    def __add__(self, other: Usage) -> Usage:
         return Usage(
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
             completion_tokens=self.completion_tokens + other.completion_tokens,

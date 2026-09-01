@@ -2,17 +2,17 @@ import uuid
 from datetime import date
 
 from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.types import GUID
 
 
 class ProductFeature(Base):
     __tablename__ = "product_features"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
     feature_name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     importance: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -24,8 +24,8 @@ class ProductFeature(Base):
 class Patent(Base):
     __tablename__ = "patents"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
     patent_number: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     abstract: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -43,8 +43,8 @@ class Patent(Base):
 class PatentClaim(Base):
     __tablename__ = "patent_claims"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patent_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patents.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    patent_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("patents.id", ondelete="CASCADE"), nullable=False, index=True)
     claim_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     claim_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_independent: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
@@ -58,9 +58,9 @@ class PatentClaim(Base):
 class PatentAnalysis(Base):
     __tablename__ = "patent_analyses"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
-    patent_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patents.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    patent_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("patents.id", ondelete="CASCADE"), nullable=False, index=True)
     risk_level: Mapped[str | None] = mapped_column(String, nullable=True)
     risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -75,9 +75,9 @@ class PatentAnalysis(Base):
 class ProsecutorResult(Base):
     __tablename__ = "prosecutor_results"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patent_analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patent_analyses.id", ondelete="CASCADE"), nullable=False, index=True)
-    claim_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patent_claims.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    patent_analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("patent_analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    claim_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("patent_claims.id", ondelete="CASCADE"), nullable=False, index=True)
     argument: Mapped[str | None] = mapped_column(Text, nullable=True)
     overlap_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -89,9 +89,9 @@ class ProsecutorResult(Base):
 class DefenderResult(Base):
     __tablename__ = "defender_results"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patent_analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patent_analyses.id", ondelete="CASCADE"), nullable=False, index=True)
-    claim_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("patent_claims.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    patent_analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("patent_analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    claim_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("patent_claims.id", ondelete="CASCADE"), nullable=False, index=True)
     argument: Mapped[str | None] = mapped_column(Text, nullable=True)
     distinction_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -103,8 +103,8 @@ class DefenderResult(Base):
 class DesignAlternative(Base):
     __tablename__ = "design_alternatives"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
     title: Mapped[str | None] = mapped_column(String, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     changed_feature: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -119,8 +119,8 @@ class DesignAlternative(Base):
 class RiskScore(Base):
     __tablename__ = "risk_scores"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    analysis_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
     overall_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     risk_level: Mapped[str | None] = mapped_column(String, nullable=True)
     prosecutor_score: Mapped[float | None] = mapped_column(Float, nullable=True)

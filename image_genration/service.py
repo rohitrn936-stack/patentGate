@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import base64
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -41,7 +40,7 @@ class ImageGenerationService:
     def __init__(
         self,
         *,
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
         config=None,
     ) -> None:
         self._config = config or resolve_llm_config(agent="image")

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import base64
 import os
-from typing import Optional
 
 from llm import ImagePart, LLMError, Message, TextPart, get_llm
 from llm.base import LLMProvider
@@ -156,7 +155,7 @@ def load_image_as_data_url(image_path: str) -> str:
 class FeatureExtractor:
     """Runs Agent 1's two LLM jobs through the provider-agnostic layer."""
 
-    def __init__(self, llm: Optional[LLMProvider] = None) -> None:
+    def __init__(self, llm: LLMProvider | None = None) -> None:
         # Resolve lazily so importing this module never needs credentials.
         self._llm = llm
 
@@ -173,7 +172,7 @@ class FeatureExtractor:
     def extract_features(
         self,
         product_description: str,
-        image_data_url: Optional[str] = None,
+        image_data_url: str | None = None,
     ) -> FeatureExtraction:
         """Job 1: analyze the description (+ optional image) for features."""
         user_text = f"PRODUCT DESCRIPTION:\n{product_description}"

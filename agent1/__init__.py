@@ -20,7 +20,6 @@ rather than crashing.
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -40,8 +39,8 @@ def mask_secrets(text: str) -> str:
 
 def run_agent1(
     description: str,
-    image_path: Optional[str] = None,
-    extractor: Optional[FeatureExtractor] = None,
+    image_path: str | None = None,
+    extractor: FeatureExtractor | None = None,
     load_env: bool = True,
 ) -> Agent1Output:
     """Run the complete Agent 1 pipeline and return a validated output.

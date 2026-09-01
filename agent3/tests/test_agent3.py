@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,7 +16,6 @@ from pydantic import ValidationError
 
 from agent3.agent import Defender
 from agent3.schemas import DefenseAnalysis, WeakClaimElement
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -105,9 +103,8 @@ def make_completion(data: dict):
 @pytest.fixture()
 def client():
     """A TestClient whose Defender is backed by the in-memory FakeProvider."""
-    from llm.testing import use_fake_llm
-
     from agent3 import server
+    from llm.testing import use_fake_llm
 
     with use_fake_llm(responses=[json.dumps(sample_analysis_json())]):
         server._defender = Defender()

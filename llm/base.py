@@ -65,8 +65,9 @@ class LLMProvider(ABC):
 
     # -- lifecycle -----------------------------------------------------------
 
-    def _validate_config(self) -> None:
-        """Hook for subclasses to reject missing credentials early."""
+    def _validate_config(self) -> None:  # noqa: B027 - optional hook, not abstract
+        """Hook for subclasses to reject missing credentials / build a client."""
+        return
 
     # -- public API --------------------------------------------------------
 

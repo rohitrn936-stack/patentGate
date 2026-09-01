@@ -6,8 +6,6 @@ behaviour; completions run against the in-memory FakeProvider.
 
 from __future__ import annotations
 
-import json
-from types import SimpleNamespace
 from unittest import mock
 
 import pytest

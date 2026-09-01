@@ -1,4 +1,3 @@
-from typing import List
 
 from .schemas import (
     RiskItem,
@@ -58,8 +57,8 @@ class RiskMatrixService:
     def _find_matching_prior_art(
         self,
         claim_element: str,
-        findings: List[dict],
-    ) -> List[dict]:
+        findings: list[dict],
+    ) -> list[dict]:
         """
         Find Agent 3 findings that appear related to
         the claim element.
@@ -82,7 +81,7 @@ class RiskMatrixService:
 
     def _has_distinction(
         self,
-        findings: List[dict],
+        findings: list[dict],
     ) -> bool:
 
         for finding in findings:
@@ -106,7 +105,7 @@ class RiskMatrixService:
 
     def _has_overlap(
         self,
-        findings: List[dict],
+        findings: list[dict],
     ) -> bool:
 
         for finding in findings:
@@ -131,7 +130,7 @@ class RiskMatrixService:
     def _has_redesign(
         self,
         claim_element: str,
-        redesign_options: List[dict],
+        redesign_options: list[dict],
     ) -> bool:
 
         element_words = set(
@@ -156,7 +155,7 @@ class RiskMatrixService:
         request: RiskMatrixRequest,
     ) -> RiskMatrixResponse:
 
-        risks: List[RiskItem] = []
+        risks: list[RiskItem] = []
 
         # Use claim elements when available.
         # Otherwise fall back to risky elements.

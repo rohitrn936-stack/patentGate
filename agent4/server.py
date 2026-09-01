@@ -7,7 +7,6 @@ Run from the repo root:
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -17,7 +16,7 @@ from .models import DesignOutput, DesignRequest
 
 app = FastAPI(title="PatentGate Agent 4 - Design-Around Engineer", version="2.0.0")
 
-_engineer: Optional[DesignEngineer] = None
+_engineer: DesignEngineer | None = None
 
 
 def _get_engineer() -> DesignEngineer:

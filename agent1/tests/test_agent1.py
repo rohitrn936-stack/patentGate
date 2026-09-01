@@ -6,8 +6,6 @@ web search, Gemini, or external patent retrieval in Agent 1.
 """
 
 import json
-from types import SimpleNamespace
-from unittest import mock
 
 import pytest
 from pydantic import ValidationError
@@ -23,7 +21,6 @@ from agent1.schemas import (
     Product,
     SimilarConcept,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
