@@ -46,8 +46,9 @@ class Settings(BaseSettings):
     log_level: str = Field("INFO", alias="LOG_LEVEL")
     log_json: bool = Field(True, alias="LOG_JSON")
 
-    # Max JSON request body accepted by the API, in bytes (1 MiB default).
-    max_request_bytes: int = Field(1_048_576, alias="MAX_REQUEST_BYTES")
+    # Max JSON request body accepted by the API, in bytes (8 MiB default -
+    # product intake can carry a base64 data-URL product image).
+    max_request_bytes: int = Field(8_388_608, alias="MAX_REQUEST_BYTES")
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

@@ -78,7 +78,7 @@ def _messages_to_anthropic(messages: list[Message]) -> list[dict[str, Any]]:
 @register_provider
 class AnthropicProvider(LLMProvider):
     name = "anthropic"
-    default_model = "claude-sonnet-4-20250514"
+    default_model = "claude-sonnet-4-6"
     supports_json_mode = False
 
     def _validate_config(self) -> None:

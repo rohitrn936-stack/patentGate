@@ -25,6 +25,10 @@ build/
 *.db
 patentgate.db
 generated_images/
+backend/media/
+media/
+.pytest_cache/
+.ruff_cache/
 
 # Logs
 *.log

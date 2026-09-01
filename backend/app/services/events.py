@@ -1,0 +1,63 @@
+"""Typed pipeline events streamed to the UI over SSE.
+
+The event names mirror the architecture spec's flow:
+
+    USER_INPUT
+      -> FEATURE_EXTRACTION_STARTED / _COMPLETED
+      -> PATENT_SEARCH_STARTED / PATENT_FOUND (x5) / PATENT_SEARCH_COMPLETED
+      -> PROSECUTOR_STARTED / _COMPLETED
+      -> DEFENDER_STARTED / _COMPLETED
+      -> DESIGN_ENGINEER_STARTED / DESIGN_OPTIONS_GENERATED
+      -> RISK_MATRIX_READY
+      -> FINAL_REPORT_READY
+      -> IMAGE_GENERATION_STARTED / REDESIGN_IMAGE_READY (xN) / IMAGE_GENERATION_SKIPPED
+      -> PIPELINE_COMPLETED  |  ERROR
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+# lifecycle
+USER_INPUT = "USER_INPUT"
+PIPELINE_COMPLETED = "PIPELINE_COMPLETED"
+ERROR = "ERROR"
+WARNING = "WARNING"
+
+# stages
+FEATURE_EXTRACTION_STARTED = "FEATURE_EXTRACTION_STARTED"
+FEATURE_EXTRACTION_COMPLETED = "FEATURE_EXTRACTION_COMPLETED"
+PATENT_SEARCH_STARTED = "PATENT_SEARCH_STARTED"
+PATENT_FOUND = "PATENT_FOUND"
+PATENT_SEARCH_COMPLETED = "PATENT_SEARCH_COMPLETED"
+PROSECUTOR_STARTED = "PROSECUTOR_STARTED"
+PROSECUTOR_COMPLETED = "PROSECUTOR_COMPLETED"
+DEFENDER_STARTED = "DEFENDER_STARTED"
+DEFENDER_COMPLETED = "DEFENDER_COMPLETED"
+DESIGN_ENGINEER_STARTED = "DESIGN_ENGINEER_STARTED"
+DESIGN_OPTIONS_GENERATED = "DESIGN_OPTIONS_GENERATED"
+RISK_MATRIX_READY = "RISK_MATRIX_READY"
+FINAL_REPORT_READY = "FINAL_REPORT_READY"
+IMAGE_GENERATION_STARTED = "IMAGE_GENERATION_STARTED"
+IMAGE_GENERATION_SKIPPED = "IMAGE_GENERATION_SKIPPED"
+REDESIGN_IMAGE_READY = "REDESIGN_IMAGE_READY"
+
+
+class PipelineEvent(BaseModel):
+    type: str
+    stage: str | None = None
+    data: Any | None = None
+    message: str | None = None
+    seq: int = 0
+    ts: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+    def sse(self) -> str:
+        """Serialize as a Server-Sent Events frame."""
+
+        return f"event: {self.type}\ndata: {self.model_dump_json()}\n\n"
+
+
+__all__ = ["PipelineEvent"]

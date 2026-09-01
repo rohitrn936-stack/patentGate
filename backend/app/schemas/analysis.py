@@ -27,10 +27,15 @@ class AnalysisError(BaseModel):
 
 
 class AnalysisDetail(AnalysisRead):
-    """The analysis plus every agent's output, assembled from ``agent_runs``."""
+    """The analysis plus every stage's output, assembled from ``agent_runs``."""
 
     feature_extraction: dict[str, Any] | None = None
+    patent_search: dict[str, Any] | None = None
+    patents: list[dict[str, Any]] = []
     prosecutor: dict[str, Any] | None = None
     defender: dict[str, Any] | None = None
     design: dict[str, Any] | None = None
+    risk_matrix: dict[str, Any] | None = None
+    report: dict[str, Any] | None = None
+    images: list[dict[str, Any]] = []
     errors: list[AnalysisError] = []

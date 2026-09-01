@@ -24,6 +24,12 @@ class DesignOption(BaseModel):
         description="Important engineering changes introduced by this option"
     )
 
+    prompt_override: str | None = Field(
+        default=None,
+        description="Explicit image prompt from Agent 4 (design_generation_prompt). "
+        "When set it is used verbatim as the base of the image prompt.",
+    )
+
 
 class ImageGenerationRequest(BaseModel):
     """

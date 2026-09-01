@@ -14,7 +14,7 @@ Agents depend on this package, never on a vendor SDK::
 Configuration (see :mod:`llm.config`)::
 
     LLM_PROVIDER=anthropic
-    LLM_MODEL=claude-sonnet-4-20250514
+    LLM_MODEL=claude-sonnet-4-6
     LLM_API_KEY=...
     # optional per-agent override:
     AGENT1_LLM_PROVIDER=openai

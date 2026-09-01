@@ -1,218 +1,164 @@
-# PatentGate — Agent 1
+# PatentGate
 
-PatentGate analyzes a user's product and helps identify potentially relevant
-prior-art concepts. This repository currently contains **only Agent 1**:
+AI-assisted **patent-risk research**. A user describes a product (with an
+optional image); a multi-agent pipeline extracts its technical features,
+searches prior art, argues where patent claim elements could overlap, argues the
+distinctions back, proposes design-around alternatives, renders before/after
+concept images, scores the exposure in a risk matrix, and writes a consolidated
+report - all **streamed to the UI stage-by-stage** over Server-Sent Events.
 
-> User input (text + optional image) → technical feature extraction (OpenAI)
-> → knowledge-based similar-concept analysis (OpenAI) → validated structured
-> JSON.
+> PatentGate is a research aid, **not legal advice**. The patent search is
+> best-effort and not exhaustive. Every agent is prompted to avoid legal
+> conclusions, and the disclaimers it returns are shown verbatim in the UI.
 
-Agents 2 (Prosecutor), 3 (Defender), 4 (Design Engineer), the risk matrix and
-the final report are **not** part of this repo yet.
+---
 
-## What Agent 1 does
-
-**Job 1 — Technical feature extraction (OpenAI).** Given a product description
-and an optional product image it extracts product name/summary, components,
-technical features (each with id, name, description, component, function,
-evidence, `evidence_source`, confidence), mechanisms, sensors, electronics,
-materials, communication interfaces, software features and assumptions. Every
-feature is labelled as one of:
-
-- `user_stated` — explicitly stated by the user;
-- `image_observation` — a characteristic actually visible in the image;
-- `assumption` — a reasonable engineering guess (also listed under `assumptions`).
-
-Agent 1 **never** invents specifications and **never** makes legal conclusions
-(e.g. that a product infringes or does not infringe a patent).
-
-**Job 2 — Knowledge-based similar-concept analysis (OpenAI).** The extracted
-features are analyzed against concepts, technologies, and mechanisms the model
-already knows from its training. The result is a structured
-`KnowledgeAnalysis`:
-
-- `invention` — a short summary of the invention;
-- `technical_features` — the salient technical features;
-- `similar_known_concepts` — each with name, why it is similar, matching
-  features, differences, and a similarity score;
-- `similarity_score` — 0.0 (no similarity) to 1.0 (near-identical);
-- `similarity_explanation` — an overall explanation;
-- `potentially_overlapping_areas` — domains likely to overlap;
-- `confidence` — how sure the model is of the analysis;
-- `disclaimer` — explicitly states the analysis is based on learned knowledge
-  and is **NOT** a verified patent search.
-
-> Agent 1 performs NO web search, NO Google Search grounding, and NO external
-> patent retrieval. It never claims a real patent was found and never
-> fabricates patent numbers, publication numbers, URLs, or dates.
-
-## Installation
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate          # macOS/Linux
-pip install -r requirements.txt
-```
-
-A `.venv` already exists in this project and the dependencies are installed.
-
-## Required environment variables
-
-Copy the template and fill in the real values:
-
-```bash
-cp .env.example .env
-```
-
-| Variable         | Required | Description                                        |
-| ---------------- | -------- | -------------------------------------------------- |
-| `OPENAI_API_KEY` | yes      | OpenAI key for feature extraction + analysis       |
-| `OPENAI_MODEL`   | optional | OpenAI model ID (default `gpt-4o-mini`)            |
-
-`.env` is git-ignored — never commit it. `OPENAI_MODEL` must be an actual model
-ID exposed by the OpenAI API (not the ChatGPT display name).
-
-## How to run the CLI
-
-```bash
-python -m agent1.main "Create a water bottle that measures the temperature of the \
-liquid using a sensor in the cap and sends the temperature to a smartphone \
-using Bluetooth."
-
-# with an optional image (PNG or JPG)
-python -m agent1.main "Smart measuring bottle" --image photos/bottle.png
-
-# no argument: prompted interactively
-python -m agent1.main
-```
-
-The structured JSON is printed to stdout.
-
-## Example output structure
-
-```json
-{
-  "status": "ok",
-  "errors": [],
-  "product": { "name": "...", "summary": "..." },
-  "components": [ { "id": "C1", "name": "...", "description": "...", "function": "..." } ],
-  "features": [
-    {
-      "id": "F1",
-      "name": "Temperature sensor in the cap",
-      "description": "...",
-      "component": "cap",
-      "function": "...",
-      "evidence": "User stated ...",
-      "evidence_source": "user_stated",
-      "confidence": 1.0
-    }
-  ],
-  "technical_concepts": [],
-  "mechanisms": [],
-  "materials": [],
-  "interfaces": [ { "name": "Bluetooth", "interface_type": "wireless", "protocol": "Bluetooth", "description": "..." } ],
-  "software_features": [],
-  "assumptions": [],
-  "analysis": {
-    "invention": "...",
-    "technical_features": ["Temperature sensor in the cap"],
-    "similar_known_concepts": [
-      {
-        "name": "Smart beverage container with temperature sensing",
-        "why_similar": "...",
-        "matching_features": ["Temperature sensor in the cap"],
-        "differences": "...",
-        "similarity_score": 0.85
-      }
-    ],
-    "similarity_score": 0.75,
-    "similarity_explanation": "...",
-    "potentially_overlapping_areas": ["smart drinkware"],
-    "confidence": 0.7,
-    "disclaimer": "This analysis is based on the model's learned knowledge and is NOT a verified patent search."
-  }
-}
-```
-
-## Architecture
+## What's in the repo
 
 ```
 patentGate/
-├── agent1/                       # Agent 1 (Feature Extractor + knowledge analysis)
-│   ├── __init__.py               # run_agent1() orchestrator + final validation
-│   ├── extractor.py              # OpenAI: feature extraction + knowledge analysis
-│   ├── schemas.py                # Pydantic models (the JSON contract)
-│   ├── main.py                   # Agent 1 CLI demo
-│   ├── server.py                 # Agent 1 FastAPI HTTP server
-│   └── tests/
-│       ├── test_agent1.py
-│       └── test_server.py
-├── agent3/                       # Agent 3 (Defender)
-│   ├── agent.py
-│   ├── server.py
-│   ├── schemas.py
-│   ├── requirements.txt
-│   ├── .env.example
-│   ├── README.md
-│   └── tests/
-│       └── test_agent3.py
-├── requirements.txt              # shared project dependencies
-├── .env / .env.example
-└── README.md
+├── llm/                  Provider-agnostic LLM layer (OpenAI/Anthropic/Gemini/OpenRouter/local)
+├── agent1/               Feature extraction + knowledge analysis (text + vision)
+├── patent_search/        Prior-art retrieval: PatentsView → Google Patents → Tavily → stubs
+├── agent2/               Prosecutor  (claim-element mappings that could read on the product)
+├── agent3/               Defender    (distinctions / gaps / weak elements)
+├── agent4/               Design-Around Engineer (exactly 3 alternative designs)
+├── image_genration/      Before/After DALL-E concept images (best-effort, non-blocking)
+├── risk_matrix/          Deterministic risk scoring (no LLM)
+├── report_agent/         Final consolidated report + "questions for your attorney"
+├── backend/              FastAPI + async SQLAlchemy: auth, products, analyses, SSE orchestration
+├── frontend/             Next.js (App Router) + Tailwind + shadcn/ui + streaming analysis view
+├── pyproject.toml        Installs `llm` + every agent package (editable)
+└── docs/                 ARCHITECTURE.md · PROVIDERS.md · AUTH.md
 ```
 
-## Running the local HTTP API server
+### Request flow
 
-Agent 1's FastAPI server lives in `agent1/server.py`.
+```
+Browser (Next.js)
+  → POST /api/auth/login                       → JWT access + refresh token
+  → POST /api/products                         → product (+ optional image) owned by the user
+  → POST /api/analyses                         → analysis row (status: pending)
+  → GET  /api/analyses/{id}/stream?token=…     → Server-Sent Events, one per stage:
+        backend/app/services/pipeline.py  ::  stream_analysis_pipeline()
+          FEATURE_EXTRACTION → PATENT_SEARCH (PATENT_FOUND ×5)
+            → PROSECUTOR → DEFENDER → DESIGN_ENGINEER
+            → RISK_MATRIX_READY → FINAL_REPORT_READY
+            → REDESIGN_IMAGE_READY ×N → PIPELINE_COMPLETED
+          every stage via llm.get_llm(agent=…); persisted to agent_runs (owner-scoped)
+  → GET  /api/analyses/{id}                    → the full assembled result (rehydrates a reload)
+```
 
-Start it with:
+`POST /api/analyses/{id}/run` still exists (fire-and-forget background task) for
+non-streaming clients; it drains the same generator.
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full picture.
+
+---
+
+## Quick start (local)
+
+Requirements: Python 3.11+, Node 20+, and an API key for one LLM provider.
 
 ```bash
-uvicorn agent1.server:app --reload --port 8000
+# 1. Python: one virtualenv for the whole repo
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"          # installs llm/ + agents + backend test deps
+pip install -r backend/requirements.txt
+
+# 2. Configure the LLM provider + the backend
+cp .env.example .env             # set LLM_PROVIDER / LLM_MODEL / LLM_API_KEY
+cp backend/.env.example backend/.env
+python -c "import secrets; print('JWT_SECRET=' + secrets.token_urlsafe(48))" >> backend/.env
+
+# 3. Run the backend (SQLite by default - no DB to install)
+cd backend && uvicorn app.main:app --reload --port 8080
+
+# 4. Run the frontend
+cd frontend && npm install
+cp .env.local.example .env.local   # NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+npm run dev                        # http://localhost:3000
 ```
 
-The server listens on `http://127.0.0.1:8000` by default.
+Register a user in the UI, describe a product (optionally attach an image), and
+the analysis view streams each stage in as it completes.
 
-### Endpoints
+### Postgres instead of SQLite
 
-**`GET /health`** — liveness probe.
+Set `DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/patentgate` in
+`backend/.env` and run migrations:
 
 ```bash
-curl http://127.0.0.1:8000/health
+cd backend && alembic upgrade head
 ```
 
-Returns:
+---
 
-```json
-{"status": "ok"}
-```
+## Choosing / switching the LLM provider
 
-**`POST /analyze`** — run Agent 1 on a product description. On success it
-returns the same structured JSON as `main.py` and writes the result to
-`results.json`.
+The agents never import a vendor SDK directly. Configuration is entirely
+environment-driven (`.env`):
 
 ```bash
-curl -X POST http://127.0.0.1:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"product_description": "A smart water bottle that measures liquid temperature using a sensor and sends the temperature to a smartphone using Bluetooth."}'
+LLM_PROVIDER=anthropic
+LLM_MODEL=claude-sonnet-4-6          # the spec's model for agents 1-4 + the report
+LLM_API_KEY=sk-ant-...
+
+IMAGE_LLM_PROVIDER=openai            # image generation is a separate modality
+IMAGE_LLM_MODEL=dall-e-3
+IMAGE_LLM_API_KEY=sk-...             # falls back to OPENAI_API_KEY
+
+PATENTSVIEW_API_KEY=                 # optional; free key at patentsview.org
+TAVILY_API_KEY=                      # optional; enables web-search prior art
 ```
 
-## Running the tests
+Supported out of the box: `openai`, `anthropic`, `gemini`, `openrouter`,
+`local` (Ollama / vLLM / LM Studio). Any `LLM_*` variable can be prefixed with
+an agent name for a per-agent override, e.g. `AGENT2_LLM_MODEL=gpt-4o` or
+`REPORT_LLM_MODEL=…`. Adding a new provider is one file — see
+[`docs/PROVIDERS.md`](docs/PROVIDERS.md).
 
-Tests never hit the network and never use real API keys — OpenAI calls are
-mocked.
+The patent search layer degrades gracefully: with no `PATENTSVIEW_API_KEY` it
+uses the credential-free Google Patents endpoint, then Tavily (if keyed), then
+falls back to concept-derived stubs so the pipeline always has 5 results.
+Set `PATENT_SEARCH_ENABLED=false` to skip the network entirely.
+
+---
+
+## Tests
 
 ```bash
-python -m pytest -q
+source .venv/bin/activate
+python -m pytest -q            # llm + all four agents + backend  (SQLite, no network)
+
+cd frontend
+npm run lint && npm run typecheck && npm run build
 ```
 
-## Current limitations
+Backend tests use SQLite and the in-memory `FakeProvider` (`llm/testing.py`),
+so they never touch a database server or a real model.
 
-- The similar-concept analysis is a knowledge-based aid, **not** legal advice
-  and **not** a verified patent search. It is based purely on the model's
-  learned knowledge.
-- `OPENAI_MODEL` defaults to `gpt-4o-mini` only when the variable is unset;
-  swap it if your account does not have access to that model.
-- Only PNG, JPG and JPEG images are supported.
-- A product image alone (no text description) is not accepted.
+---
+
+## Standalone agent servers (optional)
+
+The backend runs the agents in-process (`IN_PROCESS_AGENTS=true`). Each agent
+also ships a thin FastAPI server for LAN / debugging use:
+
+```bash
+uvicorn agent1.server:app --port 8001
+uvicorn agent2.server:app --port 8002
+uvicorn agent3.server:app --port 8003
+uvicorn agent4.server:app --port 8004
+```
+
+---
+
+## Security notes
+
+- No secrets are committed; everything is `.env`-based and `.env` is git-ignored.
+- In `APP_ENV=production` the backend refuses to start with a weak `JWT_SECRET`.
+- All product/analysis data is scoped to the authenticated owner and enforced in
+  the query layer (cross-user access returns `404`).
+- See [`docs/AUTH.md`](docs/AUTH.md) for the token model and known trade-offs
+  (e.g. the frontend stores tokens in `localStorage`).

@@ -44,10 +44,21 @@ packages = [
     "agent4",
     "image_genration",
     "risk_matrix",
+    "patent_search",
+    "report_agent",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["llm/tests", "agent1/tests", "agent2/tests", "agent3/tests", "agent4/tests", "backend/tests"]
+testpaths = [
+    "llm/tests",
+    "agent1/tests",
+    "agent2/tests",
+    "agent3/tests",
+    "agent4/tests",
+    "patent_search/tests",
+    "report_agent/tests",
+    "backend/tests",
+]
 pythonpath = [".", "backend"]
 filterwarnings = ["ignore::DeprecationWarning"]
 asyncio_mode = "auto"

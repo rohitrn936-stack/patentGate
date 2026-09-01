@@ -84,12 +84,21 @@ _DESIGN = {
     "legal_disclaimer": "Not a determination of infringement or freedom to operate.",
 }
 
+_REPORT = {
+    "executive_summary": "Overall exposure appears medium based on the supplied information.",
+    "key_risks": ["The temperature-sensor element may read on CONCEPT-1."],
+    "important_uncertainties": ["Claim construction has not been reviewed by counsel."],
+    "recommended_next_steps": ["Consult a qualified patent attorney."],
+    "attorney_questions": ["Does the cap sensor fall within the identified claim element?"],
+}
+
 _SCRIPT = [
     json.dumps(_FEATURE_EXTRACTION),
     json.dumps(_KNOWLEDGE),
     json.dumps(_PROSECUTOR),
     json.dumps(_DEFENDER),
     json.dumps(_DESIGN),
+    json.dumps(_REPORT),
 ]
 
 
@@ -131,6 +140,13 @@ async def test_full_pipeline_runs_and_persists(auth_client):
     assert len(body["design"]["alternatives"]) == 3
     assert "risk_matrix" in body["design"]
     assert body["errors"] == []
+
+    # new stages: patent search + risk matrix + final report are all exposed
+    assert len(body["patents"]) == 5
+    assert body["patents"][0]["patent_number"].startswith("CONCEPT-")
+    assert body["risk_matrix"]["overall_risk"] in {"LOW", "MEDIUM", "HIGH"}
+    assert body["report"]["legal_disclaimer"].startswith("This analysis is AI-generated")
+    assert body["report"]["attorney_questions"]
 
 
 async def test_pipeline_marks_failed_when_an_agent_errors(auth_client):

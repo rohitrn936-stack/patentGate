@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.database import create_all_tables, verify_database_connection
@@ -12,6 +13,7 @@ from app.errors import register_exception_handlers
 from app.logging_config import configure_logging
 from app.middleware import BodySizeLimitMiddleware, RequestContextMiddleware
 from app.routes import agent1, analyses, auth, products
+from app.services.pipeline import MEDIA_ROOT
 
 settings = get_settings()
 configure_logging(settings.log_level, settings.log_json)
@@ -46,6 +48,10 @@ app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(analyses.router)
 app.include_router(agent1.router)
+
+# Generated before/after concept images (Agent 4 + DALL-E) are served from here.
+MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(MEDIA_ROOT)), name="media")
 
 
 @app.get("/health", tags=["health"])

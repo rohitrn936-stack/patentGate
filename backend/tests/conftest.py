@@ -12,6 +12,7 @@ import pytest_asyncio
 # Configure the app BEFORE importing anything under app.*
 _DB_FD, _DB_PATH = tempfile.mkstemp(suffix=".sqlite3", prefix="patentgate_test_")
 os.close(_DB_FD)
+_MEDIA_DIR = tempfile.mkdtemp(prefix="patentgate_media_")
 os.environ.update(
     APP_ENV="test",
     DATABASE_URL=f"sqlite+aiosqlite:///{_DB_PATH}",
@@ -21,6 +22,10 @@ os.environ.update(
     IN_PROCESS_AGENTS="true",
     LLM_PROVIDER="fake",
     LOG_JSON="false",
+    # No network in tests: the patent search layer goes straight to the
+    # concept-derived fallback, and image generation is left unconfigured.
+    PATENT_SEARCH_ENABLED="false",
+    MEDIA_ROOT=_MEDIA_DIR,
 )
 
 import httpx  # noqa: E402

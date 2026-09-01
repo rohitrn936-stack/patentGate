@@ -55,6 +55,16 @@ class ImageGenerationService:
     def model(self) -> str:
         return self._config.model or _DEFAULT_IMAGE_MODEL
 
+    def _size(self) -> str:
+        """A landscape size the configured model actually accepts."""
+
+        model = self.model.lower()
+        if "dall-e-3" in model or "dalle3" in model:
+            return "1792x1024"
+        if "gpt-image-1" in model:
+            return "1536x1024"
+        return "1024x1024"
+
     def _validate_configuration(self) -> None:
         if self._config.provider not in _IMAGE_CAPABLE_PROVIDERS:
             raise LLMConfigError(
@@ -90,7 +100,7 @@ class ImageGenerationService:
             response = self._client().images.generate(
                 model=self.model,
                 prompt=prompt,
-                size="1792x1024",
+                size=self._size(),
             )
             data = response.data[0]
             if getattr(data, "url", None):
@@ -115,17 +125,61 @@ class ImageGenerationService:
                 option_id=option_id, prompt_used=prompt, status="error", error=str(exc)
             )
 
+    def _build_prompt(self, request: ImageGenerationRequest, option) -> str:
+        return build_before_after_prompt(
+            product_description=request.product_description,
+            original_concept=request.original_concept,
+            risky_elements=request.risky_elements,
+            option=option,
+        )
+
+    def _generate_single_image_sync(self, prompt: str, option_id: int) -> GeneratedImage:
+        """Blocking mirror of :meth:`_generate_single_image` for thread pools."""
+
+        self._validate_configuration()
+        try:
+            response = self._client().images.generate(
+                model=self.model, prompt=prompt, size=self._size()
+            )
+            data = response.data[0]
+            if getattr(data, "url", None):
+                return GeneratedImage(
+                    option_id=option_id, image_url=data.url, prompt_used=prompt, status="success"
+                )
+            if getattr(data, "b64_json", None):
+                path = self._save_base64_image(data.b64_json, option_id)
+                return GeneratedImage(
+                    option_id=option_id, image_path=path, prompt_used=prompt, status="success"
+                )
+            return GeneratedImage(
+                option_id=option_id, prompt_used=prompt, status="error",
+                error="Image API returned neither URL nor base64 data.",
+            )
+        except LLMConfigError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - surfaced per-option
+            return GeneratedImage(
+                option_id=option_id, prompt_used=prompt, status="error", error=str(exc)
+            )
+
+    def generate(self, request: ImageGenerationRequest) -> ImageGenerationResponse:
+        """Synchronous entry point (safe to call from ``asyncio.to_thread``)."""
+
+        results = [
+            self._generate_single_image_sync(self._build_prompt(request, option), option.option_id)
+            for option in request.design_options
+        ]
+        return self._summarize(results)
+
     async def generate_images(self, request: ImageGenerationRequest) -> ImageGenerationResponse:
         results: list[GeneratedImage] = []
         for option in request.design_options:
-            prompt = build_before_after_prompt(
-                product_description=request.product_description,
-                original_concept=request.original_concept,
-                risky_elements=request.risky_elements,
-                option=option,
-            )
+            prompt = self._build_prompt(request, option)
             results.append(await self._generate_single_image(prompt, option.option_id))
+        return self._summarize(results)
 
+    @staticmethod
+    def _summarize(results: list[GeneratedImage]) -> ImageGenerationResponse:
         successful = [r for r in results if r.status == "success"]
         failed = [r for r in results if r.status == "error"]
         if successful and not failed:
@@ -133,6 +187,8 @@ class ImageGenerationService:
         elif successful and failed:
             status = "partial_success"
             error = f"{len(failed)} image(s) failed while {len(successful)} succeeded."
+        elif not results:
+            status, error = "error", "No design options were supplied."
         else:
             status, error = "error", "All image generations failed."
 

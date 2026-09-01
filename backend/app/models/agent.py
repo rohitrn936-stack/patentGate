@@ -9,11 +9,9 @@ from app.models.types import GUID, JSONBType
 
 class AgentRun(Base):
     __tablename__ = "agent_runs"
+    # ``agent_type`` is intentionally unconstrained: the pipeline grew stages
+    # (patent_search, report, image_generation) beyond the original four agents.
     __table_args__ = (
-        CheckConstraint(
-            "agent_type IN ('feature_extractor', 'prosecutor', 'defender', 'design_engineer')",
-            name="ck_agent_runs_agent_type",
-        ),
         CheckConstraint(
             "status IN ('pending', 'running', 'completed', 'failed')",
             name="ck_agent_runs_status",
