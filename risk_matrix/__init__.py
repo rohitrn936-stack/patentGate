@@ -5,7 +5,7 @@ from .schemas import (
     RiskMatrixResponse,
 )
 
-from .service import RiskMatrixService
+from .services import RiskMatrixService
 
 __all__ = [
     "RiskLevel",

@@ -284,34 +284,33 @@ def test_analysis_failure_is_graceful():
 
 
 # ---------------------------------------------------------------------------
-# 5. API calls can be mocked rather than making real API calls
+# 5. The LLM layer is exercised without any network access (FakeProvider)
 # ---------------------------------------------------------------------------
 
 
-def test_openai_extraction_call_is_mocked():
-    fake_completion = SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps({
-            "product": {"name": "Mug", "summary": "S"},
-            "components": [],
-            "features": [],
-            "technical_concepts": [],
-            "mechanisms": [],
-            "materials": [],
-            "interfaces": [],
-            "software_features": [],
-            "assumptions": [],
-        })))],
-    )
-    extractor = FeatureExtractor(api_key="sk-test-not-real", model="gpt-test")
-    with mock.patch.object(
-        extractor._client.chat.completions, "create", return_value=fake_completion
-    ) as mocked:
+def test_extraction_runs_through_provider_layer():
+    from llm.testing import use_fake_llm
+
+    payload = json.dumps({
+        "product": {"name": "Mug", "summary": "S"},
+        "components": [],
+        "features": [],
+        "technical_concepts": [],
+        "mechanisms": [],
+        "materials": [],
+        "interfaces": [],
+        "software_features": [],
+        "assumptions": [],
+    })
+    with use_fake_llm(responses=[payload]):
+        extractor = FeatureExtractor()
         extraction = extractor.extract_features("A mug", image_data_url=None)
-    assert mocked.called
     assert extraction.product.name == "Mug"
 
 
-def test_openai_analysis_call_is_mocked():
+def test_analysis_runs_through_provider_layer():
+    from llm.testing import FakeProvider, use_fake_llm
+
     analysis_json = {
         "invention": "A smart mug that measures temperature.",
         "technical_features": ["Temperature sensor"],
@@ -331,15 +330,11 @@ def test_openai_analysis_call_is_mocked():
         "disclaimer": "This analysis is based on the model's learned knowledge "
         "and is NOT a verified patent search.",
     }
-    fake_completion = SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(analysis_json)))]
-    )
-    extractor = FeatureExtractor(api_key="sk-test-not-real", model="gpt-test")
-    with mock.patch.object(
-        extractor._client.chat.completions, "create", return_value=fake_completion
-    ) as mocked:
+    with use_fake_llm(responses=[json.dumps(analysis_json)]):
+        extractor = FeatureExtractor()
         analysis = extractor.analyze_similar_concepts(sample_extraction(), "A mug")
-    assert mocked.called
+        # JSON mode is requested from OpenAI-family providers.
+        assert FakeProvider.calls[0]["response_format"] == {"type": "json_object"}
     assert analysis.invention
     assert analysis.similar_known_concepts[0].name == "Smart mug with temperature sensing"
     assert 0.0 <= analysis.similarity_score <= 1.0

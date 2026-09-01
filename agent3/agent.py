@@ -1,20 +1,9 @@
-"""Agent 3 - Defender reasoning using the OpenAI API.
+"""Agent 3 - Defender reasoning through the provider-agnostic LLM layer.
 
-This module is responsible for the actual defense analysis: it takes Agent 2's
-JSON (claim elements + prior-art information) and produces a structured
-``DefenseAnalysis``. It uses the OpenAI Chat Completions API and never performs
-a new patent search.
-
-API key resolution (in order):
-1. ``OPENAI_API_KEY`` environment variable (loaded from ``.env``).
-2. An explicit ``api_key`` passed to the constructor.
-
-Model resolution:
-1. ``OPENAI_MODEL`` environment variable.
-2. An explicit ``model`` passed to the constructor.
-3. ``DEFAULT_OPENAI_MODEL`` fallback.
-
-The key is never hard-coded and never logged.
+Takes Agent 2's JSON (claim elements + prior-art information) and produces a
+structured :class:`DefenseAnalysis`. The model provider (OpenAI / Anthropic /
+Gemini / OpenRouter / local) is selected by environment config - see
+:mod:`llm.config`. Agent 3 never performs a new patent search.
 """
 
 from __future__ import annotations
@@ -24,15 +13,17 @@ import re
 from typing import Optional
 
 from dotenv import load_dotenv
-from openai import OpenAI
+
+from llm import LLMError, Message, get_llm
+from llm.base import LLMProvider
 
 from .schemas import DefenseAnalysis
 
-# Fallback OpenAI model used by Agent 3 when OPENAI_MODEL is unset.
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+#: Agent key for provider config (``AGENT3_LLM_*`` env overrides).
+AGENT_KEY = "agent3"
 
 # Redacts anything that looks like a credential so errors never leak secrets.
-_SECRET_PATTERN = re.compile(r"(sk-[A-Za-z0-9_-]+|sk-proj-[A-Za-z0-9_-]+)")
+_SECRET_PATTERN = re.compile(r"(sk-[A-Za-z0-9_-]{10,}|sk-proj-[A-Za-z0-9_-]{10,}|nvapi-[A-Za-z0-9_-]{10,})")
 
 
 SYSTEM_PROMPT = """You are the "Defender" agent in a multi-agent patent analysis \
@@ -82,8 +73,6 @@ Return ONLY valid JSON matching this exact shape, with no commentary:
   "disclaimer": "This is an AI-based analysis and is NOT a verified patent search or legal opinion."
 }"""
 
-# Prompt that asks the model to be tolerant of missing fields and still produce
-# a best-effort analysis rather than failing.
 ANALYZE_TEMPLATE = """Here is the input from Agent 2 (the Prosecutor):
 
 {payload}
@@ -101,71 +90,37 @@ def _mask(text: str) -> str:
 
 
 class Defender:
-    """Wraps the OpenAI API for Agent 3 defense analysis."""
+    """Runs Agent 3's defense analysis through the provider-agnostic layer."""
 
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-    ) -> None:
+    def __init__(self, llm: Optional[LLMProvider] = None) -> None:
         load_dotenv()
-        self._api_key = (api_key or "").strip()
-        self._model = (model or "").strip()
+        self._llm = llm
 
-        if not self._api_key:
-            import os
+    @property
+    def llm(self) -> LLMProvider:
+        if self._llm is None:
+            self._llm = get_llm(agent=AGENT_KEY)
+        return self._llm
 
-            self._api_key = (os.getenv("OPENAI_API_KEY") or "").strip()
-        if not self._model:
-            import os
-
-            self._model = (os.getenv("OPENAI_MODEL") or "").strip() or DEFAULT_OPENAI_MODEL
-
-        if not self._api_key:
-            raise RuntimeError(
-                "OPENAI_API_KEY is empty or missing. Add it to your .env file "
-                "or the agent3/.env file and try again."
-            )
-
-        self._client = OpenAI(api_key=self._api_key)
-
-    def _complete_json(self, payload: dict) -> dict:
-        """Send the Agent 2 payload to OpenAI and return parsed JSON."""
-        try:
-            completion = self._client.chat.completions.create(
-                model=self._model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": ANALYZE_TEMPLATE.format(
-                            payload=json.dumps(payload, indent=2, ensure_ascii=False)
-                        ),
-                    },
-                ],
-                response_format={"type": "json_object"},
-            )
-        except Exception as exc:
-            raise RuntimeError(f"OpenAI API call failed: {_mask(str(exc))}") from exc
-
-        text = (completion.choices[0].message.content or "").strip()
-        if not text:
-            raise RuntimeError("OpenAI returned an empty response.")
-
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise ValueError("OpenAI returned invalid JSON.") from exc
+    @property
+    def model(self) -> str:
+        return self.llm.model
 
     def analyze(self, agent2_output: dict) -> DefenseAnalysis:
         """Run the defense analysis over Agent 2's output."""
-        data = self._complete_json(agent2_output)
+        user = ANALYZE_TEMPLATE.format(
+            payload=json.dumps(agent2_output, indent=2, ensure_ascii=False)
+        )
+        # Provider resolution errors (missing key, unknown provider) surface
+        # unmasked so the operator can act on them.
+        llm = self.llm
         try:
-            return DefenseAnalysis.model_validate(data)
-        except Exception as exc:
-            raise ValueError(
-                "OpenAI defense analysis did not match the expected schema."
-            ) from exc
+            return llm.complete_structured(
+                [Message.system(SYSTEM_PROMPT), Message.user(user)],
+                DefenseAnalysis,
+            )
+        except LLMError as exc:
+            raise RuntimeError(f"LLM call failed: {_mask(str(exc))}") from exc
 
 
-__all__ = ["Defender", "DEFAULT_OPENAI_MODEL"]
+__all__ = ["Defender", "AGENT_KEY"]

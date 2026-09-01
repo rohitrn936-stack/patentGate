@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patentgate"
+version = "0.2.0"
+description = "PatentGate - provider-agnostic multi-agent patent-risk research"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "python-dotenv>=1.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# LLM providers - install only what you use.
+openai = ["openai>=1.40"]
+anthropic = ["anthropic>=0.39"]
+# Everything an agent or the standalone agent servers need.
+agents = [
+    "openai>=1.40",
+    "anthropic>=0.39",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "anthropic>=0.39",
+    "openai>=1.40",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "ruff>=0.6",
+]
+
+[tool.setuptools]
+packages = [
+    "llm",
+    "llm.providers",
+    "agent1",
+    "agent2",
+    "agent3",
+    "agent4",
+    "image_genration",
+    "risk_matrix",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["llm/tests", "agent1/tests", "agent2/tests", "agent3/tests", "agent4/tests", "backend/tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]  # FastAPI Depends() in defaults

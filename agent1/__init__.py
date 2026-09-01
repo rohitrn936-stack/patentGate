@@ -3,12 +3,14 @@
 Runs the full Agent 1 pipeline:
 
     user description (+ optional image)
-      -> OpenAI feature extraction
-      -> OpenAI knowledge-based similar-concept analysis
+      -> LLM feature extraction
+      -> LLM knowledge-based similar-concept analysis
       -> combined, validated Agent1Output (JSON contract)
 
-The similar-concept analysis is based ONLY on the model's learned knowledge;
-there is no web search, no Gemini, and no external patent retrieval.
+The LLM provider (OpenAI / Anthropic / Gemini / OpenRouter / local) is chosen by
+environment configuration - see :mod:`llm.config`. The similar-concept analysis
+is based ONLY on the model's learned knowledge; there is no web search and no
+external patent retrieval.
 
 If the analysis step fails, Agent 1 still returns the successfully extracted
 product features with ``status="analysis_failed"`` and an explanatory error,
@@ -17,7 +19,6 @@ rather than crashing.
 
 from __future__ import annotations
 
-import os
 import re
 from typing import Optional
 
@@ -26,32 +27,15 @@ from dotenv import load_dotenv
 from .extractor import FeatureExtractor, load_image_as_data_url
 from .schemas import Agent1Output, KnowledgeAnalysis
 
-# Sensible default. Override via OPENAI_MODEL in .env.
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-
 # Redacts anything that looks like an API key so errors never leak secrets.
-_SECRET_PATTERN = re.compile(r"(sk-[A-Za-z0-9_-]+|AIza[A-Za-z0-9_-]{15,})")
+_SECRET_PATTERN = re.compile(
+    r"(sk-[A-Za-z0-9_-]{10,}|sk-proj-[A-Za-z0-9_-]{10,}|AIza[A-Za-z0-9_-]{15,}|nvapi-[A-Za-z0-9_-]{10,})"
+)
 
 
 def mask_secrets(text: str) -> str:
     """Replace secret-looking substrings so they are never printed."""
     return _SECRET_PATTERN.sub("[REDACTED KEY]", text)
-
-
-def _env(name: str) -> str:
-    """Read a required environment variable or raise a clear error."""
-    value = (os.getenv(name) or "").strip()
-    if not value:
-        raise RuntimeError(
-            f"Missing required environment variable: {name}. "
-            "Add it to your .env file and try again."
-        )
-    return value
-
-
-def _optional_env(name: str, default: str) -> str:
-    """Read an optional environment variable with a fallback default."""
-    return (os.getenv(name) or "").strip() or default
 
 
 def run_agent1(
@@ -77,17 +61,14 @@ def run_agent1(
     if image_path:
         image_data_url = load_image_as_data_url(image_path)
 
-    # Create the OpenAI backend unless it was injected.
+    # Create the provider-agnostic backend unless one was injected.
     if extractor is None:
-        extractor = FeatureExtractor(
-            api_key=_env("OPENAI_API_KEY"),
-            model=_optional_env("OPENAI_MODEL", DEFAULT_OPENAI_MODEL),
-        )
+        extractor = FeatureExtractor()
 
-    # Job 1: technical feature extraction (OpenAI).
+    # Job 1: technical feature extraction.
     extraction = extractor.extract_features(description, image_data_url=image_data_url)
 
-    # Job 2: knowledge-based similar-concept analysis (OpenAI).
+    # Job 2: knowledge-based similar-concept analysis.
     errors: list[str] = []
     status = "ok"
     analysis = KnowledgeAnalysis()

@@ -1,25 +1,28 @@
-"""Agent 1 - OpenAI-based technical feature extraction and knowledge analysis.
+"""Agent 1 - technical feature extraction and knowledge analysis.
 
-This module uses only the OpenAI Chat Completions API in JSON mode and returns
-data validated by the Pydantic models in ``schemas.py``. There is no external
-search, web scraping, or patent database access of any kind.
+The two jobs (feature extraction, similar-concept analysis) run through the
+provider-agnostic :mod:`llm` layer, so the underlying model can be OpenAI,
+Anthropic, Gemini, OpenRouter or a local server without any change here. There
+is still no external search, web scraping, or patent database access.
 """
 
 from __future__ import annotations
 
 import base64
-import json
 import os
 from typing import Optional
 
-from openai import OpenAI
+from llm import ImagePart, LLMError, Message, TextPart, get_llm
+from llm.base import LLMProvider
 
 from .schemas import FeatureExtraction, KnowledgeAnalysis
+
+#: Agent key used to resolve provider config (``AGENT1_LLM_*`` env overrides).
+AGENT_KEY = "agent1"
 
 SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 IMAGE_MIME_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 
-# Prompt template used when sending the extraction request to OpenAI.
 SYSTEM_FEATURE_EXTRACTION = """You are a technical product analyst for a prior-art patent research tool.
 
 The user has NOT asked for a legal opinion. Never make a legal conclusion and
@@ -80,8 +83,6 @@ Return ONLY valid JSON, no commentary, matching this exact shape:
   "assumptions": [{"message": "", "reason": ""}]
 }"""
 
-# Prompt template used to analyze the extracted features against the model's
-# own learned knowledge (NOT a web or patent search).
 SYSTEM_KNOWLEDGE_ANALYSIS = """You are a technical analyst helping identify
 potentially related prior-art concepts for a product invention.
 
@@ -130,7 +131,7 @@ Return ONLY valid JSON, no commentary."""
 
 
 def load_image_as_data_url(image_path: str) -> str:
-    """Read an image file and return it as a base64 data URL for the API.
+    """Read an image file and return it as a base64 data URL.
 
     Raises FileNotFoundError if the path does not exist and ValueError for
     unsupported image types.
@@ -153,59 +154,28 @@ def load_image_as_data_url(image_path: str) -> str:
 
 
 class FeatureExtractor:
-    """Wraps the OpenAI API for feature extraction and query generation."""
+    """Runs Agent 1's two LLM jobs through the provider-agnostic layer."""
 
-    def __init__(self, api_key: str, model: str) -> None:
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is empty or missing.")
-        if not model:
-            raise RuntimeError("OPENAI_MODEL is empty or missing.")
-        self._client = OpenAI(api_key=api_key)
-        self._model = model
+    def __init__(self, llm: Optional[LLMProvider] = None) -> None:
+        # Resolve lazily so importing this module never needs credentials.
+        self._llm = llm
 
-    def _complete_json(
-        self,
-        system_prompt: str,
-        user_text: str,
-        image_data_url: Optional[str] = None,
-    ) -> dict:
-        """Send a request to OpenAI in JSON mode and return parsed JSON."""
-        content_parts: list[dict] = [{"type": "text", "text": user_text}]
-        if image_data_url:
-            content_parts.append(
-                {
-                    "type": "image_url",
-                    "image_url": {"url": image_data_url, "detail": "high"},
-                }
-            )
+    @property
+    def llm(self) -> LLMProvider:
+        if self._llm is None:
+            self._llm = get_llm(agent=AGENT_KEY)
+        return self._llm
 
-        completion = self._client.chat.completions.create(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": content_parts},
-            ],
-            response_format={"type": "json_object"},
-        )
-
-        text = (completion.choices[0].message.content or "").strip()
-        if not text:
-            raise RuntimeError("OpenAI returned an empty response.")
-
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise ValueError("OpenAI returned invalid JSON.") from exc
+    @property
+    def model(self) -> str:
+        return self.llm.model
 
     def extract_features(
         self,
         product_description: str,
         image_data_url: Optional[str] = None,
     ) -> FeatureExtraction:
-        """Run Job 1: analyze the description (+ optional image) for features.
-
-        Returns a validated :class:`FeatureExtraction`.
-        """
+        """Job 1: analyze the description (+ optional image) for features."""
         user_text = f"PRODUCT DESCRIPTION:\n{product_description}"
         if image_data_url:
             user_text += (
@@ -213,27 +183,24 @@ class FeatureExtractor:
                 "are actually visible in the attached product image. Mark "
                 "their evidence_source as image_observation."
             )
+            content: list = [TextPart(text=user_text), ImagePart(url=image_data_url, detail="high")]
+        else:
+            content = user_text
 
-        data = self._complete_json(
-            SYSTEM_FEATURE_EXTRACTION, user_text, image_data_url
-        )
         try:
-            return FeatureExtraction.model_validate(data)
-        except Exception as exc:  # Pydantic ValidationError or shape mismatch
-            raise ValueError(
-                "OpenAI feature extraction did not match the expected schema."
-            ) from exc
+            return self.llm.complete_structured(
+                [Message.system(SYSTEM_FEATURE_EXTRACTION), Message.user(content)],
+                FeatureExtraction,
+            )
+        except LLMError as exc:
+            raise ValueError(f"Feature extraction failed: {exc}") from exc
 
     def analyze_similar_concepts(
         self,
         extraction: FeatureExtraction,
         product_description: str,
     ) -> KnowledgeAnalysis:
-        """Run Job 2: analyze learned knowledge for similar concepts.
-
-        Returns a validated :class:`KnowledgeAnalysis`. This uses ONLY the
-        model's learned knowledge; it performs no web or patent search.
-        """
+        """Job 2: analyze the model's learned knowledge for similar concepts."""
         feature_lines = "\n".join(
             f"- {f.name}: {f.description} (function: {f.function})"
             for f in extraction.features
@@ -244,17 +211,18 @@ class FeatureExtractor:
             f"TECHNICAL FEATURES:\n{feature_lines}"
         )
 
-        data = self._complete_json(SYSTEM_KNOWLEDGE_ANALYSIS, user_text)
         try:
-            return KnowledgeAnalysis.model_validate(data)
-        except Exception as exc:
-            raise ValueError(
-                "OpenAI knowledge analysis did not match the expected schema."
-            ) from exc
+            return self.llm.complete_structured(
+                [Message.system(SYSTEM_KNOWLEDGE_ANALYSIS), Message.user(user_text)],
+                KnowledgeAnalysis,
+            )
+        except LLMError as exc:
+            raise ValueError(f"Knowledge analysis failed: {exc}") from exc
 
 
 __all__ = [
     "FeatureExtractor",
     "load_image_as_data_url",
     "SUPPORTED_IMAGE_EXTENSIONS",
+    "AGENT_KEY",
 ]
