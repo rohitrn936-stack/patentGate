@@ -20,6 +20,16 @@ out/
 dist/
 build/
 
+# Local databases / generated artifacts
+*.sqlite3
+*.db
+patentgate.db
+generated_images/
+backend/media/
+media/
+.pytest_cache/
+.ruff_cache/
+
 # Logs
 *.log
 npm-debug.log*

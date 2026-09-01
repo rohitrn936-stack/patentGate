@@ -1,4 +1,4 @@
-from typing import List
+import re
 
 from .schemas import (
     RiskItem,
@@ -6,6 +6,23 @@ from .schemas import (
     RiskMatrixRequest,
     RiskMatrixResponse,
 )
+
+# Words too common to signal that a redesign option actually targets a claim
+# element - without this filter almost every option "matches" every element.
+_STOP_WORDS = frozenset(
+    """a an and or the to of in on for with without using via be is are as at by from into
+    that this these those it its their our your system device apparatus method product
+    element claim design option alternative change changes original feature features
+    reduce reduces overlap risk patent""".split()
+)
+
+
+def _keywords(text: str) -> set[str]:
+    return {
+        w
+        for w in re.findall(r"[a-z0-9][a-z0-9\-]{2,}", (text or "").lower())
+        if w not in _STOP_WORDS
+    }
 
 
 class RiskMatrixService:
@@ -58,8 +75,8 @@ class RiskMatrixService:
     def _find_matching_prior_art(
         self,
         claim_element: str,
-        findings: List[dict],
-    ) -> List[dict]:
+        findings: list[dict],
+    ) -> list[dict]:
         """
         Find Agent 3 findings that appear related to
         the claim element.
@@ -68,6 +85,7 @@ class RiskMatrixService:
         """
 
         claim_lower = claim_element.lower()
+        claim_kw = _keywords(claim_element)
 
         matches = []
 
@@ -75,14 +93,20 @@ class RiskMatrixService:
 
             text = str(finding).lower()
 
-            if claim_lower in text:
+            if claim_lower and claim_lower in text:
+                matches.append(finding)
+                continue
+
+            # Fall back to keyword overlap so slightly reworded findings still
+            # attach to the element they describe.
+            if claim_kw and len(claim_kw & _keywords(text)) >= min(2, len(claim_kw)):
                 matches.append(finding)
 
         return matches
 
     def _has_distinction(
         self,
-        findings: List[dict],
+        findings: list[dict],
     ) -> bool:
 
         for finding in findings:
@@ -106,7 +130,7 @@ class RiskMatrixService:
 
     def _has_overlap(
         self,
-        findings: List[dict],
+        findings: list[dict],
     ) -> bool:
 
         for finding in findings:
@@ -131,22 +155,19 @@ class RiskMatrixService:
     def _has_redesign(
         self,
         claim_element: str,
-        redesign_options: List[dict],
+        redesign_options: list[dict],
     ) -> bool:
 
-        element_words = set(
-            claim_element.lower().split()
-        )
+        element_words = _keywords(claim_element)
+        if not element_words:
+            return False
 
         for option in redesign_options:
 
-            option_text = str(option).lower()
+            option_words = _keywords(str(option))
 
-            option_words = set(
-                option_text.split()
-            )
-
-            if element_words.intersection(option_words):
+            # Require a real overlap of meaningful terms, not a single stray word.
+            if len(element_words & option_words) >= min(2, len(element_words)):
                 return True
 
         return False
@@ -156,7 +177,7 @@ class RiskMatrixService:
         request: RiskMatrixRequest,
     ) -> RiskMatrixResponse:
 
-        risks: List[RiskItem] = []
+        risks: list[RiskItem] = []
 
         # Use claim elements when available.
         # Otherwise fall back to risky elements.

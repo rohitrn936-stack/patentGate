@@ -1,64 +1,63 @@
-from typing import List, Optional, Any
 from pydantic import BaseModel, Field
 
 
 class Product(BaseModel):
     name: str = ""
     description: str = ""
-    features: List[str] = Field(default_factory=list)
+    features: list[str] = Field(default_factory=list)
 
 
 class RiskClaim(BaseModel):
-    patent_id: Optional[str] = None
-    claim_id: Optional[str] = None
-    risk_level: Optional[str] = None
-    reason: Optional[str] = None
+    patent_id: str | None = None
+    claim_id: str | None = None
+    risk_level: str | None = None
+    reason: str | None = None
 
 
 class ClaimElementMapping(BaseModel):
-    patent_id: Optional[str] = None
-    claim_id: Optional[str] = None
-    claim_element: Optional[str] = None
-    product_feature: Optional[str] = None
-    strength: Optional[str] = None
-    explanation: Optional[str] = None
+    patent_id: str | None = None
+    claim_id: str | None = None
+    claim_element: str | None = None
+    product_feature: str | None = None
+    strength: str | None = None
+    explanation: str | None = None
 
 
 class ConfidencePerPatent(BaseModel):
-    patent_id: Optional[str] = None
-    confidence: Optional[float] = None
-    explanation: Optional[str] = None
+    patent_id: str | None = None
+    confidence: float | None = None
+    explanation: str | None = None
 
 
 class ProsecutorOutput(BaseModel):
-    risk_claims: List[RiskClaim] = Field(default_factory=list)
-    claim_element_mappings: List[ClaimElementMapping] = Field(default_factory=list)
-    confidence_per_patent: List[ConfidencePerPatent] = Field(default_factory=list)
+    risk_claims: list[RiskClaim] = Field(default_factory=list)
+    claim_element_mappings: list[ClaimElementMapping] = Field(default_factory=list)
+    confidence_per_patent: list[ConfidencePerPatent] = Field(default_factory=list)
 
 
 class Distinction(BaseModel):
-    patent_id: Optional[str] = None
-    claim_id: Optional[str] = None
-    distinction: Optional[str] = None
+    patent_id: str | None = None
+    claim_id: str | None = None
+    distinction: str | None = None
 
 
 class PriorArtGap(BaseModel):
-    patent_id: Optional[str] = None
-    claim_id: Optional[str] = None
-    gap: Optional[str] = None
+    patent_id: str | None = None
+    claim_id: str | None = None
+    gap: str | None = None
 
 
 class WeakClaimElement(BaseModel):
-    patent_id: Optional[str] = None
-    claim_id: Optional[str] = None
-    claim_element: Optional[str] = None
-    weakness: Optional[str] = None
+    patent_id: str | None = None
+    claim_id: str | None = None
+    claim_element: str | None = None
+    weakness: str | None = None
 
 
 class DefenderOutput(BaseModel):
-    distinctions: List[Distinction] = Field(default_factory=list)
-    prior_art_gaps: List[PriorArtGap] = Field(default_factory=list)
-    weak_claim_elements: List[WeakClaimElement] = Field(default_factory=list)
+    distinctions: list[Distinction] = Field(default_factory=list)
+    prior_art_gaps: list[PriorArtGap] = Field(default_factory=list)
+    weak_claim_elements: list[WeakClaimElement] = Field(default_factory=list)
 
 
 class DesignRequest(BaseModel):
@@ -71,7 +70,7 @@ class AlternativeDesign(BaseModel):
     id: int
     description: str
     avoids_claim_element: str
-    changes_from_original: List[str] = Field(default_factory=list)
+    changes_from_original: list[str] = Field(default_factory=list)
     tradeoff: str
     why_it_differs: str
     risk_reduction_rationale: str
@@ -81,7 +80,7 @@ class AlternativeDesign(BaseModel):
 class DesignOutput(BaseModel):
     agent: str = "design-engineer"
     status: str = "completed"
-    alternatives: List[AlternativeDesign] = Field(default_factory=list)
+    alternatives: list[AlternativeDesign] = Field(default_factory=list)
     legal_disclaimer: str = (
         "These engineering alternatives are not a determination of patent "
         "infringement or freedom to operate. Legal review by a qualified "

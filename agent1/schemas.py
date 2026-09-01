@@ -6,7 +6,7 @@ Agents 2 (Prosecutor) and 3 (Defender) can consume it later.
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 

@@ -13,6 +13,17 @@ def build_before_after_prompt(
 
     original = original_concept or product_description
 
+    # Agent 4 may hand us a ready-made DALL-E prompt; use it as the base and
+    # still append the guard-rails so no image claims legal validity.
+    if option.prompt_override and option.prompt_override.strip():
+        return (
+            option.prompt_override.strip()
+            + "\n\nRender as a clean side-by-side BEFORE vs AFTER technical "
+            "concept illustration. This is a conceptual engineering "
+            "visualization only - not a legally valid patent drawing. Do not "
+            "add patent numbers, legal claims, or attorney statements."
+        )
+
     risky_text = "\n".join(
         f"- {item}"
         for item in risky_elements

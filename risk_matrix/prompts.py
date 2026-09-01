@@ -1,12 +1,11 @@
-from typing import List
 
 
 def build_risk_matrix_prompt(
     product_description: str,
-    claim_elements: List[str],
-    risky_elements: List[str],
-    prior_art_findings: List[dict],
-    redesign_options: List[dict],
+    claim_elements: list[str],
+    risky_elements: list[str],
+    prior_art_findings: list[dict],
+    redesign_options: list[dict],
 ) -> str:
 
     claim_text = "\n".join(
