@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,22 +35,22 @@ class RiskItem(BaseModel):
         description="Explanation for the assigned risk",
     )
 
-    supporting_patents: List[str] = Field(
+    supporting_patents: list[str] = Field(
         default_factory=list,
         description="Patent identifiers supporting the assessment",
     )
 
-    prior_art_overlap: Optional[str] = Field(
+    prior_art_overlap: str | None = Field(
         default=None,
         description="Description of overlap with prior art",
     )
 
-    distinction: Optional[str] = Field(
+    distinction: str | None = Field(
         default=None,
         description="Relevant distinction identified by Agent 3",
     )
 
-    recommended_action: Optional[str] = Field(
+    recommended_action: str | None = Field(
         default=None,
         description="Suggested engineering or claim strategy",
     )
@@ -70,22 +69,22 @@ class RiskMatrixRequest(BaseModel):
         min_length=1,
     )
 
-    claim_elements: List[str] = Field(
+    claim_elements: list[str] = Field(
         default_factory=list,
         description="Claim elements identified by Agent 2",
     )
 
-    risky_elements: List[str] = Field(
+    risky_elements: list[str] = Field(
         default_factory=list,
         description="Elements identified as potentially risky",
     )
 
-    prior_art_findings: List[dict] = Field(
+    prior_art_findings: list[dict] = Field(
         default_factory=list,
         description="Findings returned by Agent 3",
     )
 
-    redesign_options: List[dict] = Field(
+    redesign_options: list[dict] = Field(
         default_factory=list,
         description="Engineering alternatives from Agent 4",
     )
@@ -98,16 +97,16 @@ class RiskMatrixResponse(BaseModel):
 
     status: str
 
-    overall_score: Optional[int] = Field(
+    overall_score: int | None = Field(
         default=None,
         ge=0,
         le=100,
     )
 
-    overall_risk: Optional[RiskLevel] = None
+    overall_risk: RiskLevel | None = None
 
-    risks: List[RiskItem] = Field(
+    risks: list[RiskItem] = Field(
         default_factory=list,
     )
 
-    error: Optional[str] = None
+    error: str | None = None

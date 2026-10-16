@@ -1,12 +1,16 @@
-"""PatentGate - Agent 1 local HTTP API server.
+"""PatentGate - Agent 1 standalone HTTP API server (dev / LAN use).
 
-Exposes the existing OpenAI-only knowledge-based Agent 1 pipeline over HTTP.
-This server does NOT perform web search, does NOT use Gemini, and does NOT
-access any external patent API. It reuses the existing ``run_agent1``
-orchestrator and writes the same structured JSON result to ``results.json``.
+Exposes the knowledge-based Agent 1 pipeline over HTTP. The LLM provider is
+chosen by environment config (see :mod:`llm.config`) - OpenAI, Anthropic,
+Gemini, OpenRouter or a local server. This server performs no web search and no
+external patent retrieval. It reuses ``run_agent1`` and writes the structured
+JSON result to ``results.json``.
 
-Start with:
-    uvicorn server:app --reload
+The primary integration path is now in-process via the backend
+(``IN_PROCESS_AGENTS=true``); this server is kept for parity and local testing.
+
+Start from the repo root:
+    uvicorn agent1.server:app --reload --port 8001
 """
 
 from __future__ import annotations

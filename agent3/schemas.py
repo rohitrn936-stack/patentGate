@@ -7,7 +7,7 @@ intentionally tolerant of Agent 2's evolving input shape.
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -68,7 +68,7 @@ class AnalyzeRequest(BaseModel):
     accepted.
     """
 
-    agent2_output: Optional[dict] = None
+    agent2_output: dict | None = None
 
 
 __all__ = [

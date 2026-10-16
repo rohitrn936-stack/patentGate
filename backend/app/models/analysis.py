@@ -1,11 +1,10 @@
 import uuid
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
+from app.models.types import GUID
 
 ANALYSIS_STATUSES = (
     "pending",
@@ -27,8 +26,8 @@ class Analysis(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    product_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     completed_at = mapped_column(DateTime(timezone=True), nullable=True)

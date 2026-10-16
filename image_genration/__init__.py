@@ -1,7 +1,7 @@
 from .schemas import (
     DesignOption,
-    ImageGenerationRequest,
     GeneratedImage,
+    ImageGenerationRequest,
     ImageGenerationResponse,
 )
 from .service import ImageGenerationService

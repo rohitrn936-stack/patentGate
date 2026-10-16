@@ -1,11 +1,10 @@
 from .schemas import (
-    RiskLevel,
     RiskItem,
+    RiskLevel,
     RiskMatrixRequest,
     RiskMatrixResponse,
 )
-
-from .service import RiskMatrixService
+from .services import RiskMatrixService
 
 __all__ = [
     "RiskLevel",
