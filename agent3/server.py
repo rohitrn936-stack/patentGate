@@ -12,18 +12,18 @@ Run (from the patentGate directory):
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import FastAPI, Request
 
 from .agent import Defender
-from .schemas import AnalyzeRequest, DefenderResponse
+from .schemas import DefenderResponse
 
 app = FastAPI(title="PatentGate Agent 3 - Defender", version="1.0.0")
 
 # Lazily-created Defender so the server can start without a valid API key and
 # tests can inject a fake. Created on first /analyze call.
-_defender: Optional[Defender] = None
+_defender: Defender | None = None
 
 
 def _get_defender() -> Defender:

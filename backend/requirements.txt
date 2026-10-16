@@ -1,8 +1,12 @@
+# PatentGate backend (FastAPI + async SQLAlchemy).
+# The shared `llm/` package and agent packages come from the repo root:
+#   pip install -e ".[agents]"
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 SQLAlchemy==2.0.43
 greenlet==3.2.4
 asyncpg==0.30.0
+aiosqlite==0.20.0
 alembic==1.16.4
 pydantic-settings==2.10.1
 python-jose[cryptography]==3.5.0
@@ -10,3 +14,4 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 email-validator==2.2.0
 python-dotenv==1.1.1
+httpx==0.28.1

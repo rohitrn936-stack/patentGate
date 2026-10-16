@@ -1,12 +1,16 @@
-"""PatentGate - Agent 1 local HTTP API server.
+"""PatentGate - Agent 1 standalone HTTP API server (dev / LAN use).
 
-Exposes the existing OpenAI-only knowledge-based Agent 1 pipeline over HTTP.
-This server does NOT perform web search, does NOT use Gemini, and does NOT
-access any external patent API. It reuses the existing ``run_agent1``
-orchestrator and writes the same structured JSON result to ``results.json``.
+Exposes the knowledge-based Agent 1 pipeline over HTTP. The LLM provider is
+chosen by environment config (see :mod:`llm.config`) - OpenAI, Anthropic,
+Gemini, OpenRouter or a local server. This server performs no web search and no
+external patent retrieval. It reuses ``run_agent1`` and writes the structured
+JSON result to ``results.json``.
 
-Start with:
-    uvicorn server:app --reload
+The primary integration path is now in-process via the backend
+(``IN_PROCESS_AGENTS=true``); this server is kept for parity and local testing.
+
+Start from the repo root:
+    uvicorn agent1.server:app --reload --port 8001
 """
 
 from __future__ import annotations
@@ -18,7 +22,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from . import run_agent1
+from . import mask_secrets, run_agent1
 
 RESULTS_FILE = "results.json"
 # The project root (parent of the agent1/ package), where results.json lives.
@@ -49,7 +53,14 @@ def analyze(request: AnalyzeRequest) -> dict:
     if not description:
         return {"status": "error", "error": "Product description is empty."}
 
-    result = run_agent1(description, load_env=False)
+    try:
+        result = run_agent1(description, load_env=False)
+    except Exception as exc:
+        # Never leak secrets/stack traces; return a clean structured error.
+        return {
+            "status": "error",
+            "error": f"Agent 1 failed: {type(exc).__name__}: {mask_secrets(str(exc))}",
+        }
 
     payload = json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
 

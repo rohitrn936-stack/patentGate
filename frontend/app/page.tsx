@@ -1,182 +1,184 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import { ImagePlus, Loader2, X } from "lucide-react";
+import { toast } from "sonner";
 
-type InputPayload = {
-  productDescription: string;
-  productImage: File | null;
-};
+import { AppShell } from "@/components/app-shell";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { analyses, products } from "@/lib/api";
+import { useRequireAuth } from "@/lib/auth";
 
-const acceptedImageTypes = ["image/png", "image/jpeg", "image/webp"];
+const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
+const MAX_IMAGE_BYTES = 700 * 1024; // keep the JSON body small
 
-export default function Home() {
-  const [productDescription, setProductDescription] = useState("");
-  const [productImage, setProductImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isPrepared, setIsPrepared] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
-  useEffect(() => {
-    return () => {
-      if (imagePreview) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview]);
+export default function IntakePage() {
+  const { user, loading } = useRequireAuth();
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextImage = event.target.files?.[0] ?? null;
-    setErrorMessage("");
-    setIsPrepared(false);
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-    if (!nextImage) {
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!ACCEPTED.includes(file.type)) {
+      toast.error("Use a PNG, JPEG or WebP image.");
       return;
     }
-
-    if (!acceptedImageTypes.includes(nextImage.type)) {
-      setProductImage(null);
-      setImagePreview(null);
-      setErrorMessage("Please choose a PNG, JPG, JPEG, or WEBP image.");
-      event.target.value = "";
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Image is over 700 KB - please use a smaller one.");
       return;
     }
+    setImage({ name: file.name, dataUrl: await fileToDataUrl(file) });
+  }
 
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
-    setProductImage(nextImage);
-    setImagePreview(URL.createObjectURL(nextImage));
-  };
-
-  const removeImage = () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
-    setProductImage(null);
-    setImagePreview(null);
-    setIsPrepared(false);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const trimmedDescription = productDescription.trim();
-    if (!trimmedDescription) {
-      setErrorMessage("Describe what your product does before analysis.");
-      setIsPrepared(false);
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const desc = description.trim();
+    if (desc.length < 20) {
+      toast.error("Add a few sentences describing what the product does.");
       return;
     }
+    setSubmitting(true);
+    try {
+      const name = desc.split(/[.\n]/)[0].slice(0, 80).trim() || "Untitled product";
+      const product = await products.create({
+        name,
+        description: desc,
+        image_url: image?.dataUrl ?? null,
+      });
+      const analysis = await analyses.create(product.id);
+      router.push(`/analysis/${analysis.id}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not start the analysis");
+      setSubmitting(false);
+    }
+  }
 
-    const payload: InputPayload = {
-      productDescription: trimmedDescription,
-      productImage,
-    };
-
-    setProductDescription(payload.productDescription);
-    setErrorMessage("");
-    setIsPrepared(true);
-  };
+  if (loading || !user) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-2xl space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
-    <main className="page-shell">
-      <section className="input-stage" aria-labelledby="product-input-title">
-        <div className="brand-row">
-          <div className="brand-mark" aria-hidden="true">
-            PG
-          </div>
-          <div>
-            <p className="brand-name">PatentGate</p>
-            <p className="brand-tagline">Patent risk research starts here</p>
-          </div>
-        </div>
-
-        <div className="intro-copy">
-          <p className="eyebrow">Product intake</p>
-          <h1 id="product-input-title">What does your product do?</h1>
-          <p>
-            Describe the core behavior, components, and user-facing function.
-            Add an image if visual context would help explain the product.
+    <AppShell>
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-6 space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-primary">
+            Product intake
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">What does your product do?</h1>
+          <p className="text-sm text-muted-foreground">
+            Describe the core behaviour, components and workflows. Add an image if
+            shape or layout matters. The pipeline extracts features, searches prior
+            art, runs a prosecutor/defender debate, proposes design-arounds and
+            builds a risk report - streamed live.
           </p>
         </div>
 
-        <form className="product-form" onSubmit={handleSubmit} noValidate>
-          <label className="field-label" htmlFor="product-description">
-            Product description
-          </label>
-          <textarea
-            id="product-description"
-            className="description-input"
-            value={productDescription}
-            onChange={(event) => {
-              setProductDescription(event.target.value);
-              setErrorMessage("");
-              setIsPrepared(false);
-            }}
-            placeholder="Example: A wearable device that continuously monitors heart rate and sends alerts to a smartphone."
-            rows={9}
-          />
-
-          <div className="upload-panel">
-            <div>
-              <label className="field-label" htmlFor="product-image">
-                Product image <span>optional</span>
-              </label>
-              <p className="upload-hint">PNG, JPG, JPEG, or WEBP. Kept local for now.</p>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              id="product-image"
-              className="file-input"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={handleImageChange}
-            />
-
-            {imagePreview ? (
-              <div className="image-preview-card">
-                <Image
-                  src={imagePreview}
-                  alt="Selected product preview"
-                  width={168}
-                  height={126}
-                  unoptimized
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Describe the product</CardTitle>
+            <CardDescription>
+              Facts only - avoid marketing language. The more technical detail, the
+              better the analysis.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={onSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="description">Product description</Label>
+                <Textarea
+                  id="description"
+                  rows={9}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Example: A water bottle whose cap contains a temperature sensor that measures the liquid and streams readings to a smartphone over Bluetooth Low Energy."
+                  disabled={submitting}
                 />
-                <div className="image-meta">
-                  <p>{productImage?.name}</p>
-                  <button type="button" className="secondary-button" onClick={removeImage}>
-                    Remove image
-                  </button>
-                </div>
               </div>
-            ) : (
-              <label className="upload-dropzone" htmlFor="product-image">
-                <span>Add product image</span>
-                <small>Use this only if shape, layout, or components matter.</small>
-              </label>
-            )}
-          </div>
 
-          {errorMessage ? <p className="validation-message">{errorMessage}</p> : null}
-          {isPrepared ? (
-            <p className="success-message">
-              Input validated. Product details are ready for the next pipeline stage.
-            </p>
-          ) : null}
+              <div className="space-y-2">
+                <Label>Product image (optional)</Label>
+                {image ? (
+                  <div className="flex items-center gap-3 rounded-md border p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.dataUrl}
+                      alt="Product preview"
+                      className="h-16 w-16 rounded object-cover"
+                    />
+                    <span className="flex-1 truncate text-sm text-muted-foreground">
+                      {image.name}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setImage(null)}
+                      disabled={submitting}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={submitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed py-6 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    Add image (PNG / JPEG / WebP, under 700 KB)
+                  </button>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept={ACCEPTED.join(",")}
+                  className="hidden"
+                  onChange={onPickImage}
+                />
+              </div>
 
-          <button className="primary-button" type="submit">
-            Analyze Product
-          </button>
-        </form>
-      </section>
-    </main>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {submitting ? "Starting analysis..." : "Analyze product"}
+              </Button>
+            </CardContent>
+          </form>
+        </Card>
+      </div>
+    </AppShell>
   );
 }

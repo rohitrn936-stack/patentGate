@@ -9,13 +9,11 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
 
 from agent1 import server
-from agent1.schemas import KnowledgeAnalysis, SimilarConcept
 
 
 @pytest.fixture()

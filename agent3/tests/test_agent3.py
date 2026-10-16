@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from unittest import mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,7 +16,6 @@ from pydantic import ValidationError
 
 from agent3.agent import Defender
 from agent3.schemas import DefenseAnalysis, WeakClaimElement
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -104,17 +102,16 @@ def make_completion(data: dict):
 
 @pytest.fixture()
 def client():
-    """A TestClient with OpenAI mocked."""
+    """A TestClient whose Defender is backed by the in-memory FakeProvider."""
     from agent3 import server
+    from llm.testing import use_fake_llm
 
-    defender = Defender(api_key="sk-test-not-real")
-
-    def fake_analyze(payload):
-        return DefenseAnalysis.model_validate(sample_analysis_json())
-
-    with mock.patch.object(defender, "analyze", side_effect=fake_analyze):
-        server._defender = defender
-        yield TestClient(server.app)
+    with use_fake_llm(responses=[json.dumps(sample_analysis_json())]):
+        server._defender = Defender()
+        try:
+            yield TestClient(server.app)
+        finally:
+            server._defender = None
 
 
 # ---------------------------------------------------------------------------
@@ -181,49 +178,49 @@ def test_risk_must_be_valid():
 
 
 # ---------------------------------------------------------------------------
-# OpenAI API interaction tests (mocked)
+# LLM interaction tests (provider-agnostic, no network)
 # ---------------------------------------------------------------------------
 
 
-def test_defender_calls_openai():
-    defender = Defender(api_key="sk-test-not-real")
-    fake_completion = make_completion(sample_analysis_json())
-    with mock.patch.object(
-        defender._client.chat.completions, "create", return_value=fake_completion
-    ) as mocked:
-        result = defender.analyze(sample_agent2_output())
+def test_defender_calls_llm():
+    from llm.testing import use_fake_llm
 
-    assert mocked.called
+    with use_fake_llm(responses=[json.dumps(sample_analysis_json())]):
+        result = Defender().analyze(sample_agent2_output())
+
     assert isinstance(result, DefenseAnalysis)
     assert result.distinctions[0].claim_element.startswith("Bluetooth")
     assert 0.0 <= result.confidence <= 1.0
 
 
-def test_defender_uses_json_mode():
-    defender = Defender(api_key="sk-test-not-real")
-    fake_completion = make_completion(sample_analysis_json())
-    with mock.patch.object(
-        defender._client.chat.completions, "create", return_value=fake_completion
-    ) as mocked:
-        defender.analyze(sample_agent2_output())
-    assert mocked.call_args.kwargs["response_format"] == {"type": "json_object"}
+def test_defender_requests_json_mode_for_openai_family():
+    from llm.testing import FakeProvider, use_fake_llm
+
+    with use_fake_llm(responses=[json.dumps(sample_analysis_json())]):
+        Defender().analyze(sample_agent2_output())
+        assert FakeProvider.calls[0]["response_format"] == {"type": "json_object"}
 
 
-def test_defender_requires_api_key():
-    # Correctly patch env so no key is available.
-    with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
-        "agent3.agent.load_dotenv", return_value=None
-    ):
+def test_defender_requires_configured_provider(monkeypatch):
+    import llm as _llm
+
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    for var in ("LLM_API_KEY", "OPENAI_API_KEY", "API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    _llm.reset_provider_cache()
+    with pytest.raises(_llm.LLMConfigError):
+        Defender().analyze(sample_agent2_output())
+
+
+def test_defender_wraps_llm_errors_as_runtime_error():
+    from llm.errors import LLMRateLimitError
+    from llm.testing import use_fake_llm
+
+    with use_fake_llm(responses=[LLMRateLimitError("429")]):
+        d = Defender()
+        d.llm.max_retries = 0
         with pytest.raises(RuntimeError):
-            Defender(api_key="")
-
-
-def test_default_model_used_when_unset():
-    with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
-        "agent3.agent.load_dotenv", return_value=None
-    ):
-        defender = Defender(api_key="sk-test-not-real", model="")
-        assert defender._model == "gpt-4o-mini"
+            d.analyze(sample_agent2_output())
 
 
 def test_no_patent_identifiers_in_output(client):
